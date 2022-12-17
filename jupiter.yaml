@@ -1,0 +1,52 @@
+- name: Jupiter Setup
+  hosts: jupiter
+  tasks:
+    - name: Install Packages
+      block:
+        - name: Install basic dependencies
+          ansible.builtin.apt:
+            name:
+            - tmux
+            - ca-certificates
+            - curl
+            - gnupg
+            - lsb-release
+            state: present
+          become: true
+    - name: Docker Setup
+      block:
+        - name: Add docker apt key
+          ansible.builtin.get_url:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            dest: /etc/apt/trusted.gpg.d/docker.asc
+          become: true
+        - name: Add docker repo
+          ansible.builtin.apt_repository:
+            repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/docker.asc] https://download.docker.com/linux/ubuntu jammy stable"
+          become: true
+        - name: Install docker and dependencies
+          ansible.builtin.apt:
+            name:
+            - docker-ce
+            - docker-ce-cli
+            - containerd.io
+            - docker-compose-plugin
+            state: present
+          become: true
+        - name: Ensure Docker is running
+          service:
+            name: docker
+            state: started
+          become: true
+        - name: Ensure user in docker group
+          user: name=elw
+                group=elw
+                shell=/bin/bash
+                groups=docker
+                append=yes
+          become: true
+    - name: Enable ssh
+      service:
+        name: ssh
+        state: started
+      become: true
