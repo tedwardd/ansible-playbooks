@@ -6,11 +6,12 @@
         - name: Install basic dependencies
           ansible.builtin.apt:
             name:
-            - tmux
-            - ca-certificates
-            - curl
-            - gnupg
-            - lsb-release
+              - tmux
+              - ca-certificates
+              - curl
+              - gnupg
+              - lsb-release
+              - zfsutils-linux
             state: present
           become: true
     - name: Docker Setup
@@ -19,6 +20,7 @@
           ansible.builtin.get_url:
             url: https://download.docker.com/linux/ubuntu/gpg
             dest: /etc/apt/trusted.gpg.d/docker.asc
+            mode: 0600
           become: true
         - name: Add docker repo
           ansible.builtin.apt_repository:
@@ -27,26 +29,36 @@
         - name: Install docker and dependencies
           ansible.builtin.apt:
             name:
-            - docker-ce
-            - docker-ce-cli
-            - containerd.io
-            - docker-compose-plugin
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-compose-plugin
             state: present
           become: true
         - name: Ensure Docker is running
-          service:
+          ansible.builtin.service:
             name: docker
             state: started
           become: true
         - name: Ensure user in docker group
-          user: name=elw
-                group=elw
-                shell=/bin/bash
-                groups=docker
-                append=yes
+          ansible.builtin.user:
+            name: elw
+            group: elw
+            shell: /bin/bash
+            groups: docker
+            append: true
           become: true
-    - name: Enable ssh
-      service:
-        name: ssh
-        state: started
-      become: true
+    - name: Enable Standard Services
+      block:
+        - name: Enable ssh
+          ansible.builtin.service:
+            name: ssh
+            state: started
+          become: true
+    - name: Configure Storage Layout
+      block:
+        - name: Create Zpool
+          ansible.builtin.command: zpool create tank raidz sdb sdc sdd sde sdf
+          args:
+            creates: /tank
+          become: true
