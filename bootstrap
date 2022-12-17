@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# We assume you already have ansible installed for your host system (maybe I'll add that later)
+
+# Install community collection
+ansible-galaxy collection install community.general
