@@ -14,6 +14,7 @@
               - gnupg
               - lsb-release
               - zfsutils-linux
+              - apt-transport-https
             state: present
     - name: Docker Setup
       block:
