@@ -22,7 +22,7 @@
           ansible.builtin.get_url:
             url: https://download.docker.com/linux/ubuntu/gpg
             dest: /etc/apt/trusted.gpg.d/docker.asc
-            mode: 0600
+            mode: 0644
         - name: Add docker repo
           ansible.builtin.apt_repository:
             repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/docker.asc] https://download.docker.com/linux/ubuntu jammy stable"
@@ -54,6 +54,6 @@
     - name: Configure Storage Layout
       block:
         - name: Create Zpool
-          ansible.builtin.command: zpool create tank raidz sda sdc sdd sde sdf sdg
+          ansible.builtin.command: zpool create tank raidz2 sdc sdd sde sdf sdg sdh sdi sdj
           args:
             creates: /tank
