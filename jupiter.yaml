@@ -57,3 +57,9 @@
           ansible.builtin.command: zpool create tank raidz2 sdc sdd sde sdf sdg sdh sdi sdj
           args:
             creates: /tank
+        - name: Create Ravencoin Blockchain Storage
+          community.general.zfs:
+            name: tank/rvn
+            state: present
+            extra_zfs_properties:
+              quota: 200G
