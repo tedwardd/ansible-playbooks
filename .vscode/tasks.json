@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Ansible dryrun",
+        "type": "shell",
+        "command": "/Users/twood5/git-work/personal/ansible-playbooks/script/run jupiter debug=true",
+        "group": "test",
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        }
+      }
+    ]
+  }

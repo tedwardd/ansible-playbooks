@@ -1,0 +1,41 @@
+# Create the raven user and group
+- name: Add raven group
+  ansible.builtin.group:
+    name: raven
+    system: true
+- name: Add raven user
+  ansible.builtin.user:
+    name: raven
+    group: raven
+    shell: /bin/bash
+    system: true
+    home: /tank/rvn
+
+# Download and extract node software
+- name: Download
+  ansible.builtin.get_url:
+    url: "https://github.com/RavenProject/Ravencoin/releases/download/v4.6.1/raven-4.6.1-7864c39c2-x86_64-linux-gnu-disable-wallet.tar.gz"
+    dest: /tmp
+    checksum: md5:f181d3e93c31fb61c3f51e1fb9826db4
+    mode: 0444
+- name: Extract Raven archive
+  ansible.builtin.unarchive:
+    remote_src: true
+    src: "https://github.com/RavenProject/Ravencoin/releases/download/v4.6.1/raven-4.6.1-7864c39c2-x86_64-linux-gnu-disable-wallet.tar.gz"
+    dest: /tank/rvn
+
+# Symlink important binaries
+- name: Link raven-cli
+  ansible.builtin.file:
+    src: /tank/rvn/bin/raven-cli
+    dest: /usr/local/bin/raven-cli
+    owner: raven
+    group: raven
+    state: link
+- name: Link ravend
+  ansible.builtin.file:
+    src: /tank/rvn/bin/ravend
+    dest: /usr/local/bin/ravend
+    owner: raven
+    group: raven
+    state: link
