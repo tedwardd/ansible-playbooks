@@ -1,0 +1,13 @@
+- name: Install zfs packages
+  ansible.builtin.apt:
+    name:
+      - zfsutils-linux
+    state: present
+    
+- name: Configure zpool
+  import_tasks: pool.yaml
+  when: pool_members | length > 0
+
+- name: Create zfs filesystems
+  import_tasks: filesystem.yaml
+  when: zfs_filesystems | length > 0

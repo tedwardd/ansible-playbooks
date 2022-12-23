@@ -2,7 +2,14 @@
 - name: Jupiter Setup
   hosts: jupiter
   become: true
+  vars:
+    local_users:
+      - elw
   tasks:
+    - name: Get all groups
+      ansible.builtin.getent:
+        database: group
+        split: ':'
     - name: Install Packages
       block:
         - name: Install basic dependencies
@@ -13,53 +20,34 @@
               - curl
               - gnupg
               - lsb-release
-              - zfsutils-linux
               - apt-transport-https
             state: present
-    - name: Docker Setup
-      block:
-        - name: Add docker apt key
-          ansible.builtin.get_url:
-            url: https://download.docker.com/linux/ubuntu/gpg
-            dest: /etc/apt/trusted.gpg.d/docker.asc
-            mode: 0644
-        - name: Add docker repo
-          ansible.builtin.apt_repository:
-            repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/docker.asc] https://download.docker.com/linux/ubuntu jammy stable"
-        - name: Install docker and dependencies
-          ansible.builtin.apt:
-            name:
-              - docker-ce
-              - docker-ce-cli
-              - containerd.io
-              - docker-compose-plugin
-            state: present
-        - name: Ensure Docker is running
-          ansible.builtin.service:
-            name: docker
-            state: started
-        - name: Ensure user in docker group
-          ansible.builtin.user:
-            name: elw
-            group: elw
-            shell: /bin/bash
-            groups: docker
-            append: true
     - name: Enable Standard Services
       block:
         - name: Enable ssh
           ansible.builtin.service:
             name: ssh
             state: started
-    - name: Configure Storage Layout
-      block:
-        - name: Create Zpool
-          ansible.builtin.command: zpool create tank raidz2 sdc sdd sde sdf sdg sdh sdi sdj
-          args:
-            creates: /tank
-        - name: Create Ravencoin Blockchain Storage
-          community.general.zfs:
-            name: tank/rvn
-            state: present
-            extra_zfs_properties:
-              quota: 200G
+    - name: Create local users
+      ansible.builtin.user:
+        name: "{{ item }}"
+        shell: /bin/bash
+        state: present
+      loop: "{{ local_users }}"
+    - name: Add local users to docker group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        state: present
+        groups: docker
+        append: true
+      loop: "{{ local_users }}"
+      when: '"docker" in ansible_facts.getent_group'
+  roles:
+    - role: raven-node
+    - role: docker
+    - role: zpool
+      vars:
+        pool_members: "sdc sdd sde sdf sdg sdh sdi sdj"
+        pool_type: "raidz2"
+        pool_name: "tank"
+        zfs_filesystems: [{path: "tank/rvn", quota: "214748364800"}]

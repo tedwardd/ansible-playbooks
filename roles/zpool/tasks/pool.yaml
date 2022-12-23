@@ -1,0 +1,5 @@
+- name: Create Zpool
+  ansible.builtin.command:
+    zpool create "{{pool_name}}" "{{ pool_type }}" "{{ pool_members }}"
+  args:
+    creates: "/{{ pool_name }}"

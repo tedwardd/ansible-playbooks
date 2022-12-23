@@ -1,0 +1,7 @@
+- name: Create ZFS Filesystems
+  community.general.zfs:
+    name: "{{ item.path }}"
+    state: present
+    extra_zfs_properties:
+      quota: "{{ item.quota }}"
+  loop: "{{ zfs_filesystems }}"
