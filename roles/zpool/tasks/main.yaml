@@ -3,11 +3,11 @@
     name:
       - zfsutils-linux
     state: present
-    
+
 - name: Configure zpool
-  import_tasks: pool.yaml
-  when: pool_members | length > 0
+  ansible.builtin.import_tasks: pool.yaml
+  when: pool_members is defined
 
 - name: Create zfs filesystems
-  import_tasks: filesystem.yaml
-  when: zfs_filesystems | length > 0
+  ansible.builtin.import_tasks: filesystem.yaml
+  when: zfs_filesystems is defined and zpool_exists is defined

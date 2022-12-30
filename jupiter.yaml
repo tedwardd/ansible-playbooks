@@ -21,6 +21,18 @@
               - gnupg
               - lsb-release
               - apt-transport-https
+              - genisoimage
+            state: present
+        - name: Install Virtualization dependencies
+          ansible.builtin.apt:
+            name:
+              - bridge-utils
+              - cpu-checker
+              - libvirt-clients
+              - libvirt-daemon
+              - qemu
+              - qemu-kvm
+              - virt-manager
             state: present
     - name: Enable Standard Services
       block:
@@ -42,12 +54,52 @@
         append: true
       loop: "{{ local_users }}"
       when: '"docker" in ansible_facts.getent_group'
+    - name: Create plotter temp storage
+      block:
+        - name: Create plotter partition
+          community.general.parted:
+            device: /dev/sdj
+            number: 1
+            state: present
+            fs_type: xfs
+        - name: Create plotter temp fs
+          community.general.filesystem:
+            fstype: xfs
+            dev: /dev/sdj1
+            state: present
+            resizefs: true
+        - name: Create plotter-tmp path
+          ansible.builtin.file:
+            path: /mnt/plotter-temp
+            state: directory
+            owner: elw
+            group: elw
+            mode: '0755'
+        - name: Mount plotter temp
+          ansible.posix.mount:
+            path: /mnt/plotter-temp
+            src: /dev/sdj1
+            fstype: xfs
+            state: mounted
+    - name: Make zpool
+      zpool:
+        name: tank
+        devices:
+          - sdc
+          - sdd
+          - sde
+          - sdf
+          - sdg
+          - sdh
+          - sdi
+        raid_level: raidz2
+        vdev: 7
+        state: present
+    - name: Create ZFS Filesystems
+      community.general.zfs:
+        name: 'tank/rvn'
+        state: present
+        extra_zfs_properties:
+          quota: "200GB"
   roles:
-    - role: raven-node
     - role: docker
-    - role: zpool
-      vars:
-        pool_members: "sdc sdd sde sdf sdg sdh sdi sdj"
-        pool_type: "raidz2"
-        pool_name: "tank"
-        zfs_filesystems: [{path: "tank/rvn", quota: "214748364800"}]
