@@ -67,7 +67,6 @@
             fstype: xfs
             dev: /dev/sdj1
             state: present
-            resizefs: true
         - name: Create plotter-tmp path
           ansible.builtin.file:
             path: /mnt/plotter-temp
@@ -100,6 +99,6 @@
         name: 'tank/rvn'
         state: present
         extra_zfs_properties:
-          quota: "200GB"
+          quota: "214748364800" # Must be defined in bytes
   roles:
     - role: docker
