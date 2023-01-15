@@ -1,0 +1,12 @@
+- name: Install Virtualization Packages
+  ansible.builtin.apt:
+    name:
+      - bridge-utils
+      - cpu-checker
+      - libvirt-clients
+      - libvirt-daemon
+      - qemu
+      - qemu-kvm
+      - virt-manager
+    state: present
+  when: ( ansible_facts['os_family'] == "Ubuntu" or ansible_facts['os_family'] == "Debian" )
