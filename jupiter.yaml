@@ -10,36 +10,6 @@
       ansible.builtin.getent:
         database: group
         split: ':'
-    - name: Install Packages
-      block:
-        - name: Install basic dependencies
-          ansible.builtin.apt:
-            name:
-              - tmux
-              - ca-certificates
-              - curl
-              - gnupg
-              - lsb-release
-              - apt-transport-https
-              - genisoimage
-            state: present
-        - name: Install Virtualization dependencies
-          ansible.builtin.apt:
-            name:
-              - bridge-utils
-              - cpu-checker
-              - libvirt-clients
-              - libvirt-daemon
-              - qemu
-              - qemu-kvm
-              - virt-manager
-            state: present
-    - name: Enable Standard Services
-      block:
-        - name: Enable ssh
-          ansible.builtin.service:
-            name: ssh
-            state: started
     - name: Create local users
       ansible.builtin.user:
         name: "{{ item }}"
@@ -102,3 +72,5 @@
           quota: "214748364800" # Must be defined in bytes
   roles:
     - role: docker
+    - role: linux_base
+    - role: virt_host
