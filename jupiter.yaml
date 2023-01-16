@@ -72,5 +72,5 @@
           quota: "214748364800" # Must be defined in bytes
   roles:
     - role: docker
-    - role: linux_base
+    - role: linux_common
     - role: virt_host
