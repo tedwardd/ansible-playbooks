@@ -1,5 +1,5 @@
 - name: Install packages
   ansible.builtin.import_tasks: packages.yaml
 
-- name: Enable services
+- name: Enable common services
   ansible.builtin.import_tasks: services.yaml

@@ -1,0 +1,11 @@
+- name: Install Common Packages
+  ansible.builtin.apt:
+    name:
+      - tmux
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - apt-transport-https
+      - genisoimage
+    state: present

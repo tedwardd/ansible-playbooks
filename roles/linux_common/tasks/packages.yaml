@@ -1,12 +1,7 @@
-- name: Install Common Packages
-  ansible.builtin.apt:
-    name:
-      - tmux
-      - ca-certificates
-      - curl
-      - gnupg
-      - lsb-release
-      - apt-transport-https
-      - genisoimage
-    state: present
-  when: ( ansible_facts['os_family'] == "Ubuntu" or ansible_facts['os_family'] == "Debian")
+- name: Install packages for Debian
+  ansible.builtin.import_tasks: debian/packages.yaml
+  when: ansible_facts['os_family']|lower == "debian"
+
+- name: Install packages for Redhat
+  ansible.builtin.import_tasks: redhat/packages.yaml
+  when: ansible_facts['os_family']|lower == "redhat"
