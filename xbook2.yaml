@@ -1,0 +1,17 @@
+---
+- name: Xbook2 Setup
+  hosts: xbook2
+  become: true
+  tasks:
+    - name: Get all groups
+      ansible.builtin.getent:
+        database: group
+        split: ':'
+    - name: Create local human user
+      ansible.builtin.user:
+        name: elw
+        group: elw
+        shell: /bin/bash
+        state: present
+  roles:
+    - role: linux_common
