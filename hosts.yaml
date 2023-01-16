@@ -6,13 +6,16 @@ all:
   children:
     laptops:
       hosts:
+        smackbook:
+          vars:
+            ansible_user: twood5
         xbook2:
-        work_mbp:
+          ansible_host: 192.168.1.192
+      vars:
+        host_type: workstation
     servers:
       hosts:
         jupiter:
           ansible_host: 192.168.1.101
-    vm_hosts:
-      hosts:
-        jupiter:
-          ansible_host: 192.168.1.101
+      vars:
+        host_type: server
