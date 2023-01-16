@@ -3,6 +3,16 @@ all:
     ansible_connection: ssh
     ansible_user: elw
     ansible_port: 22
-  hosts:
-    jupiter:
-      ansible_host: 192.168.1.101
+  children:
+    laptops:
+      hosts:
+        xbook2:
+        work_mbp:
+    servers:
+      hosts:
+        jupiter:
+          ansible_host: 192.168.1.101
+    vm_hosts:
+      hosts:
+        jupiter:
+          ansible_host: 192.168.1.101
