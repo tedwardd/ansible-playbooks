@@ -1,4 +1,4 @@
-- name: Install Common Packages
+- name: Install Redhat Common Packages
   ansible.builtin.apt:
     name:
       - tmux

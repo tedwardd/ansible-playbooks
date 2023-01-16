@@ -1,4 +1,4 @@
-- name: Install Common Packages
+- name: Install Ubuntu/Debian Common Packages
   ansible.builtin.apt:
     name:
       - tmux
@@ -8,4 +8,30 @@
       - lsb-release
       - apt-transport-https
       - genisoimage
+      - openssh-server
+      - silversearcher-ag
+      - jq
+      - mosh
+      - python3
+      - python2.7
+      - unzip
     state: present
+- name: Install Ubuntu/Debian Workstation Packages
+  ansible.builtin.apt:
+    name:
+      - brave-browser
+      - brave-keyring
+      - calibre
+      - calibre-bin
+      - chrome-gnome-shell
+      - build-essential
+      - git
+      - gnome-tweaks
+      - gnome-tweak-tool
+      - nodejs
+      - npm
+      - libnode-dev
+      - libpython3-all-dev
+      - libpython3-dev
+  when: hostvars[inventory_hostname]['host_type'] == 'workstation'
+
