@@ -1,7 +1,6 @@
 ---
 - name: Xbook2 Setup
   hosts: xbook2
-  become: true
   tasks:
     - name: Get all groups
       ansible.builtin.getent:
@@ -13,6 +12,24 @@
         group: elw
         shell: /bin/bash
         state: present
+      become: true
+    - name: Install vagrant-libvirt deps
+      ansible.builtin.apt:
+        name:
+          - qemu-system-common
+          - qemu-user
+          - libvirt-daemon-system
+          - ebtables
+          - libguestfs-tools
+          - libxslt-dev
+          - libxml2-dev
+          - zlib1g-dev
+          - ruby-dev
+          - libvirt-dev
+          - ruby-libvirt
+      become: true
   roles:
     - role: linux_common
     - role: vagrant
+      req_vagrant_plugins:
+        - vagrant-libvirt
