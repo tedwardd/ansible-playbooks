@@ -34,4 +34,3 @@
       - libpython3-all-dev
       - libpython3-dev
   when: hostvars[inventory_hostname]['host_type'] == 'workstation'
-
