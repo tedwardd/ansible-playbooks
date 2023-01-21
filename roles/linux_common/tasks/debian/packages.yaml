@@ -15,6 +15,7 @@
       - python3
       - python2.7
       - unzip
+      - apt-file
     state: present
 - name: Install Ubuntu/Debian Workstation Packages
   ansible.builtin.apt:
