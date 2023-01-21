@@ -6,3 +6,7 @@
 - name: Install vagrant application
   ansible.builtin.include_tasks:
     file: install.yaml
+
+- name: Install vagrant plugins
+  ansible.builtin.include_tasks:
+    file: plugins.yaml

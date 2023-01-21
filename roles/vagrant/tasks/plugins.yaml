@@ -1,0 +1,12 @@
+---
+- name: Get installed plugins
+  ansible.builtin.shell:
+    cmd: "vagrant plugin list | awk '{print $1}'"
+  register: vagrant_plugins
+  changed_when: false
+
+- name: Install missing Vagrant plugins
+  ansible.builtin.command:
+    cmd: vagrant plugin install {{ item }}
+  when: 'item not in vagrant_plugins.stdout'
+  with_items: "{{ req_vagrant_plugins }}"
