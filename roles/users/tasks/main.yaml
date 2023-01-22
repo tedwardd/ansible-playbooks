@@ -1,0 +1,6 @@
+---
+- name: Create local user
+  ansible.builtin.user:
+          name: "{{ item.name }}"
+          group: "{{ item.group | default(
+          state: present

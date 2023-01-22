@@ -1,0 +1,38 @@
+---
+- name: chiafarm setup
+  hosts: chiafarm
+  tasks:
+    - name:
+      ansible.builtin.getent:
+        database: group
+        split: ':'
+    - name: Create local human user
+      ansible.builtin.user:
+        name: elw
+        group: elw
+        shell: /bin/bash
+        state: present
+      become: true
+    - name: Install vagrant-libvirt deps
+      ansible.builtin.apt:
+        name:
+          - qemu-system-common
+          - qemu-user
+          - libvirt-daemon-system
+          - ebtables
+          - libguestfs-tools
+          - libxslt-dev
+          - libxml2-dev
+          - zlib1g-dev
+          - ruby-dev
+          - libvirt-dev
+          - ruby-libvirt
+      become: true
+  roles:
+    - role: linux_common
+    - role: vagrant
+      req_vagrant_plugins:
+        - vagrant-libvirt
+    - role: users
+      user_list:
+        name: elw
