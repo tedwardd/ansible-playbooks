@@ -1,0 +1,10 @@
+- name: Install Homebrew applications
+  environment:
+    PATH: /usr/local/bin:{{ ansible_env["PATH"] }}
+  community.general.homebrew:
+    name: '{{ item }}'
+    state: latest
+  become: false
+  notify:
+    - restart dock
+  with_lines: cat files/homebrew_apps

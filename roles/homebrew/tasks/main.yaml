@@ -1,0 +1,12 @@
+---
+- name: Install homebrew
+  ansible.builtin.include_tasks:
+    file: install.yaml
+
+- name: Install homebrew taps
+  ansible.builtin.include_tasks:
+    file: taps.yaml
+
+- name: Install homebrew apps
+  ansible.builtin.include_tasks:
+    file: apps.yaml

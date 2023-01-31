@@ -1,0 +1,50 @@
+---
+- name: Check if Homebrew already installed
+  ansible.builtin.stat:
+    path: /opt/homebrew/bin/brew
+  register: homebrew_binary
+- name: Install and configure Homebrew
+  block:
+    - name: Ensure homebrew directory is present
+      ansible.builtin.file:
+        path: /opt/homebrew
+        state: directory
+        mode: 0755
+        owner: twood5
+        group: wheel
+        recurse: yes
+      become: true
+    - name: Download homebrew installation script
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/Homebrew/install/master/install
+        dest: /tmp/install
+    - name: Install Homebrew
+      shell: /usr/bin/which -s brew || /usr/bin/ruby /tmp/install < /dev/null
+    - name: Set permissions for /opt/homebrew
+      ansible.builtin.file:
+        path: '{{ item }}'
+        mode: '0775'
+        owner: '{{ ansible_user }}'
+        group: wheel
+        recurse: yes
+        state: directory
+      become: true
+      with_items: '{{ homebrew_paths }}'
+      ignore_errors: yes
+    - name: Reset the Homebrew Library repo
+      ansible.builtin.git:
+        repo: https://github.com/Homebrew/brew.git
+        dest: /opt/homebrew/Library
+        clone: false
+        update: true
+        force: true
+    - name: Update Homebrew (first try may fail)
+      community.general.homebrew:
+        update_homebrew: true
+      become: false
+      ignore_errors: true
+    - name: Update homebrew
+      community.general.homebrew:
+        update_homebrew: true
+      become: false
+  when: not homebrew_binary.stat.exists
