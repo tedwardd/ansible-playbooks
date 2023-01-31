@@ -6,7 +6,7 @@ all:
   children:
     laptops:
       hosts:
-        work_mbp:
+        smackbook:
           ansible_host: 127.0.0.1
           ansible_user: twood5
         xbook2:
