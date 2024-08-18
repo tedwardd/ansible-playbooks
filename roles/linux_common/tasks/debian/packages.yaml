@@ -13,7 +13,6 @@
       - jq
       - mosh
       - python3
-      - python2.7
       - unzip
       - apt-file
     state: present
