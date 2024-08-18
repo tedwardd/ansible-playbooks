@@ -5,3 +5,7 @@
 - name: Enable common services
   ansible.builtin.import_tasks: services.yaml
   become: true
+
+- name: Set common configs
+  ansible.builtin.import_tasks: users.yaml
+  become: true
