@@ -17,5 +17,7 @@ all:
       hosts:
         jupiter:
           ansible_host: 192.168.1.101
+        jumpstar:
+          ansible_host: 192.168.1.10
       vars:
         host_type: server

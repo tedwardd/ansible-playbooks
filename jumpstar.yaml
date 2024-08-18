@@ -1,0 +1,4 @@
+- name: jumpstar
+  hosts: jumpstar
+  roles:
+    - role: linux_common
