@@ -1,29 +1,28 @@
 ---
+- name: Jumpstar Setup
+  hosts: jumpstar
+  become: true
+  vars:
+    local_users:
+      - userid: elw
+        gh_id: tedwardd
+        sudo: true
+  roles:
+    - role: linux_common
+---
 - name: Jupiter Setup
   hosts: jupiter
   become: true
   vars:
     local_users:
-      - elw
+      - userid: elw
+        gh_id: tedwardd
+        sudo: true
+  roles:
+    - role: docker
+    - role: linux_common
+    - role: virt_host
   tasks:
-    - name: Get all groups
-      ansible.builtin.getent:
-        database: group
-        split: ':'
-    - name: Create local users
-      ansible.builtin.user:
-        name: "{{ item }}"
-        shell: /bin/bash
-        state: present
-      loop: "{{ local_users }}"
-    - name: Add local users to docker group
-      ansible.builtin.user:
-        name: "{{ item }}"
-        state: present
-        groups: docker
-        append: true
-      loop: "{{ local_users }}"
-      when: '"docker" in ansible_facts.getent_group'
     - name: Create plotter temp storage
       block:
         - name: Create plotter partition
@@ -70,7 +69,3 @@
         state: present
         extra_zfs_properties:
           quota: "214748364800" # Must be defined in bytes
-  roles:
-    - role: docker
-    - role: linux_common
-    - role: virt_host

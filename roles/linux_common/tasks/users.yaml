@@ -1,17 +1,39 @@
+- name: Get all groups
+  ansible.builtin.getent:
+    database: group
+    split: ':'
+
 - name: Create user
   ansible.builtin.user:
-    name: elw
+    name: "{{ item.userid }}"
     create_home: yes
     shell: /bin/bash
-    groups: sudo
-    append: yes
     generate_ssh_key: yes
     ssh_key_type: ed25519
     ssh_key_file: .ssh/id_ed25519
+  loop: "{{ local_users }}"
 
 - name: Set authorized_key
   ansible.posix.authorized_key:
-    user: elw
+    user: "{{ item.userid }}"
     state: present
-    key: https://github.com/tedwardd.keys
+    key: "https://github.com/+{{ item.gh_id }}+.keys"
+  loop: "{{ local_users }}"
 
+- name: Add local users to docker group
+  ansible.builtin.user:
+    name: "{{ item.userid }}"
+    state: present
+    groups: docker
+    append: true
+  loop: "{{ local_users }}"
+  when: '"docker" in ansible_facts.getent_group'
+
+- name: Apply sudo permissions
+  ansible.builtin.user:
+    name: "{{ item.userid }}"
+    state: present
+    groups: sudo
+    append: true
+  loop: "{{ local_users }}"
+  when: item.sudo | bool
