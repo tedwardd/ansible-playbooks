@@ -1,18 +1,17 @@
 ---
 - name: Xbook2 Setup
   hosts: xbook2
+  vars:
+    local_users:
+      - userid: elw
+        gh_id: tedwardd
+        sudo: true
+  roles:
+    - role: linux_common
+    - role: vagrant
+      req_vagrant_plugins:
+        - vagrant-libvirt
   tasks:
-    - name: Get all groups
-      ansible.builtin.getent:
-        database: group
-        split: ':'
-    - name: Create local human user
-      ansible.builtin.user:
-        name: elw
-        group: elw
-        shell: /bin/bash
-        state: present
-      become: true
     - name: Install vagrant-libvirt deps
       ansible.builtin.apt:
         name:
@@ -28,8 +27,3 @@
           - libvirt-dev
           - ruby-libvirt
       become: true
-  roles:
-    - role: linux_common
-    - role: vagrant
-      req_vagrant_plugins:
-        - vagrant-libvirt
