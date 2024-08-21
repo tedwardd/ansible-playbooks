@@ -7,9 +7,16 @@
       - userid: elw
         gh_id: tedwardd
         sudo: true
+    fail2ban_services:
+      - name: sshd
+        port: 2223
+        maxretry: 5
+        bantime: 1h
+        bantime_increment: true
+        bantime_factor: 2
   roles:
     - role: linux_common
----
+    - role: oefenweb.fail2ban
 - name: Jupiter Setup
   hosts: jupiter
   become: true

@@ -11,6 +11,8 @@ all:
           ansible_user: twood5
         xbook2:
           ansible_host: 127.0.0.1
+        ministar:
+          ansible_host: 192.168.1.89
       vars:
         host_type: workstation
     servers:
@@ -18,6 +20,6 @@ all:
         jupiter:
           ansible_host: 192.168.1.101
         jumpstar:
-          ansible_host: 192.168.1.10
+          ansible_port: 2223
       vars:
         host_type: server
