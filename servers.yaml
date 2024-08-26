@@ -14,6 +14,7 @@
         bantime: 1h
         bantime_increment: true
         bantime_factor: 2
+        backend: systemd
   roles:
     - role: linux_common
     - role: oefenweb.fail2ban
