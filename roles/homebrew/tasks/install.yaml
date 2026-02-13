@@ -10,7 +10,7 @@
         path: /opt/homebrew
         state: directory
         mode: 0755
-        owner: twood5
+        owner: "{{ ws_user.userid }}"
         group: wheel
         recurse: yes
       become: true
@@ -24,7 +24,7 @@
       ansible.builtin.file:
         path: '{{ item }}'
         mode: '0775'
-        owner: '{{ ansible_user }}'
+        owner: '{{ ws_user.rserid }}'
         group: wheel
         recurse: yes
         state: directory

@@ -27,3 +27,12 @@
           - libvirt-dev
           - ruby-libvirt
       become: true
+- name: MiniStar Configs
+  hosts: ministar
+  vars:
+    local_users:
+      - userid: elw
+        gh_id: tedwardd
+        sudo: true
+  roles:
+    - role: linux_common

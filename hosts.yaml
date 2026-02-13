@@ -12,14 +12,15 @@ all:
         xbook2:
           ansible_host: 127.0.0.1
         ministar:
-          ansible_host: 192.168.1.89
+          ansible_host: ministar
       vars:
         host_type: workstation
     servers:
       hosts:
         jupiter:
-          ansible_host: 192.168.1.101
+          ansible_host: 192.168.1.58
         jumpstar:
+          ansible_host: techmachine.net
           ansible_port: 22
       vars:
         host_type: server

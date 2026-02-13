@@ -30,33 +30,8 @@
     - role: docker
     - role: linux_common
     - role: virt_host
+    - role: prometheus.prometheus.prometheus
   tasks:
-    - name: Create plotter temp storage
-      block:
-        - name: Create plotter partition
-          community.general.parted:
-            device: /dev/sdj
-            number: 1
-            state: present
-            fs_type: xfs
-        - name: Create plotter temp fs
-          community.general.filesystem:
-            fstype: xfs
-            dev: /dev/sdj1
-            state: present
-        - name: Create plotter-tmp path
-          ansible.builtin.file:
-            path: /mnt/plotter-temp
-            state: directory
-            owner: elw
-            group: elw
-            mode: '0755'
-        - name: Mount plotter temp
-          ansible.posix.mount:
-            path: /mnt/plotter-temp
-            src: /dev/sdj1
-            fstype: xfs
-            state: mounted
     - name: Make zpool
       zpool:
         name: tank

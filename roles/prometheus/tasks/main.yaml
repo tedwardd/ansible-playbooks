@@ -1,0 +1,26 @@
+# Install the Docker APT repo
+- name: Add docker apt key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/trusted.gpg.d/docker.asc
+    mode: 0644
+    checksum: md5:1afae06b34a13c1b3d9cb61a26285a15
+- name: Add docker repo
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/docker.asc] https://download.docker.com/linux/ubuntu jammy stable"
+
+# Install docker packages and dependencies
+- name: Install docker and dependencies
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: present
+
+# Enable and make sure the docker daemon is running
+- name: Ensure Docker is running
+  ansible.builtin.service:
+    name: docker
+    state: started

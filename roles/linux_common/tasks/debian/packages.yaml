@@ -19,15 +19,11 @@
 - name: Install Ubuntu/Debian Workstation Packages
   ansible.builtin.apt:
     name:
-      - brave-browser
-      - brave-keyring
       - calibre
       - calibre-bin
       - chrome-gnome-shell
       - build-essential
       - git
-      - gnome-tweaks
-      - gnome-tweak-tool
       - nodejs
       - npm
       - libnode-dev

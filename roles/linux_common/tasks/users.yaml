@@ -17,7 +17,7 @@
   ansible.posix.authorized_key:
     user: "{{ item.userid }}"
     state: present
-    key: "https://github.com/+{{ item.gh_id }}+.keys"
+    key: "https://github.com/{{ item.gh_id }}.keys"
   loop: "{{ local_users }}"
 
 - name: Add local users to docker group
