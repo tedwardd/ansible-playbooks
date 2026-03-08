@@ -1,0 +1,6 @@
+---
+- name: Restart ebpf-net-exporter
+  ansible.builtin.systemd:
+    name: ebpf-net-exporter
+    state: restarted
+    daemon_reload: true
