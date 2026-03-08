@@ -9,3 +9,7 @@
 - name: Set common configs
   ansible.builtin.import_tasks: users.yaml
   become: true
+
+- name: Install ebpf-net-exporter
+  ansible.builtin.import_tasks: ebpf_net_exporter.yaml
+  become: true
