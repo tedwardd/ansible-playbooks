@@ -1,7 +1,7 @@
 ---
 - name: Download ebpf-net-exporter binary
   ansible.builtin.get_url:
-    url: "https://github.com/tedwardd/ebpf-net-exporter/releases/download/{{ ebpf_net_exporter_version }}/ebpf-net-exporter-linux-amd64"
+    url: "https://github.com/tedwardd/ebpf-net-exporter/releases/download/{{ ebpf_net_exporter_version }}/ebpf-net-exporter-linux-{{ ansible_architecture | replace('x86_64', 'amd64') | replace('aarch64', 'arm64') }}"
     dest: "{{ ebpf_net_exporter_install_path }}"
     owner: root
     group: root
