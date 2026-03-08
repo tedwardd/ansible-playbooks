@@ -1,0 +1,27 @@
+---
+- name: Download ebpf-net-exporter binary
+  ansible.builtin.get_url:
+    url: "https://github.com/tedwardd/ebpf-net-exporter/releases/download/{{ ebpf_net_exporter_version }}/ebpf-net-exporter-linux-amd64"
+    dest: "{{ ebpf_net_exporter_install_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Restart ebpf-net-exporter
+  when: ebpf_net_exporter_enabled
+
+- name: Deploy ebpf-net-exporter systemd service
+  ansible.builtin.template:
+    src: ebpf-net-exporter.service.j2
+    dest: /etc/systemd/system/ebpf-net-exporter.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart ebpf-net-exporter
+  when: ebpf_net_exporter_enabled
+
+- name: Enable and start ebpf-net-exporter
+  ansible.builtin.systemd:
+    name: ebpf-net-exporter
+    enabled: true
+    state: started
+  when: ebpf_net_exporter_enabled
