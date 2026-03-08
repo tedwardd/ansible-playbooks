@@ -1,0 +1,5 @@
+---
+ebpf_net_exporter_enabled: true
+ebpf_net_exporter_version: "20260308.0"
+ebpf_net_exporter_install_path: /usr/local/bin/ebpf-net-exporter
+ebpf_net_exporter_addr: ":9102"
