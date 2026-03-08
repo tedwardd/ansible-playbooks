@@ -1,0 +1,20 @@
+[Unit]
+Description=eBPF Network Traffic Exporter
+Documentation=https://github.com/tedwardd/ebpf-net-exporter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart={{ ebpf_net_exporter_install_path }} --addr {{ ebpf_net_exporter_addr }}
+Restart=on-failure
+RestartSec=5
+# BPF kprobes require root on kernels < 5.8.
+# On 5.8+ this can be replaced with AmbientCapabilities=CAP_BPF CAP_PERFMON.
+User=root
+# Harden the service: no filesystem writes needed after start.
+ProtectHome=read-only
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
