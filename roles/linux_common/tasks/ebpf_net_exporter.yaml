@@ -25,3 +25,4 @@
     enabled: true
     state: started
   when: ebpf_net_exporter_enabled
+  ignore_errors: "{{ ansible_check_mode }}"
