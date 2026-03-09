@@ -13,3 +13,7 @@
 - name: Install ebpf-net-exporter
   ansible.builtin.import_tasks: ebpf_net_exporter.yaml
   become: true
+
+- name: Install node_exporter
+  ansible.builtin.import_tasks: node_exporter.yaml
+  become: true
