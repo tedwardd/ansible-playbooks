@@ -1,0 +1,9 @@
+[Unit]
+Description=Cloudflare DNS discovery for Prometheus file_sd
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/cf-dns-discovery
+User=root

@@ -1,0 +1,4 @@
+---
+cf_dns_discovery_zone: "techmachine.net"
+cf_dns_discovery_output_dir: "/var/lib/prometheus-file-sd"
+cf_dns_discovery_token_file: "/etc/cloudflare/api_token"

@@ -11,8 +11,6 @@ all:
           ansible_user: twood5
         xbook2:
           ansible_host: 127.0.0.1
-        ministar:
-          ansible_host: ministar
       vars:
         host_type: workstation
     servers:
@@ -20,7 +18,14 @@ all:
         jupiter:
           ansible_host: 192.168.1.58
         jumpstar:
-          ansible_host: techmachine.net
-          ansible_port: 22
+          ansible_host: 100.104.207.54
+        ministar:
+          ansible_host: ministar
+      vars:
+        host_type: server
+    external:
+      hosts:
+        mail:
+          ansible_host: mail
       vars:
         host_type: server

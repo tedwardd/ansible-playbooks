@@ -5,7 +5,7 @@
       - cpu-checker
       - libvirt-clients
       - libvirt-daemon
-      - qemu
+      - qemu-system
       - qemu-kvm
       - virt-manager
     state: present

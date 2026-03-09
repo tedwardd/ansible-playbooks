@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Cloudflare DNS discovery every 15 minutes
+Requires=cf-dns-discovery.service
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=15m
+Unit=cf-dns-discovery.service
+
+[Install]
+WantedBy=timers.target

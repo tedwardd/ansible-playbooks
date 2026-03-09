@@ -9,12 +9,29 @@
         sudo: true
     fail2ban_services:
       - name: sshd
-        port: 2223
+        port: 22
         maxretry: 5
         bantime: 1h
         bantime_increment: true
         bantime_factor: 2
         backend: systemd
+      - name: nginx-http-auth
+        port: http,https
+        logpath: /var/log/nginx/error.log
+        maxretry: 5
+      - name: nginx-botsearch
+        port: http,https
+        logpath: /var/log/nginx/access.log
+        maxretry: 2
+      - name: nginx-bad-request
+        port: http,https
+        logpath: /var/log/nginx/access.log
+        maxretry: 5
+      - name: recidive
+        logpath: /var/log/fail2ban.log
+        bantime: 1w
+        findtime: 1d
+        maxretry: 5
   roles:
     - role: linux_common
     - role: oefenweb.fail2ban
@@ -31,6 +48,7 @@
     - role: linux_common
     - role: virt_host
     - role: prometheus.prometheus.prometheus
+    - role: cf_dns_discovery
   tasks:
     - name: Make zpool
       zpool:

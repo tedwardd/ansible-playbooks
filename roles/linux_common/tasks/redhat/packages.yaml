@@ -1,11 +1,10 @@
 - name: Install Redhat Common Packages
-  ansible.builtin.apt:
+  ansible.builtin.yum:
     name:
       - tmux
       - ca-certificates
       - curl
-      - gnupg
-      - lsb-release
-      - apt-transport-https
-      - genisoimage
+      - jq
+      - python3
+      - unzip
     state: present

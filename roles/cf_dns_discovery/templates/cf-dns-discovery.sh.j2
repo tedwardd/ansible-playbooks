@@ -1,0 +1,25 @@
+#!/bin/sh
+# Cloudflare DNS discovery for Prometheus file_sd
+# Managed by Ansible - do not edit manually
+set -e
+
+CF_TOKEN=$(cat {{ cf_dns_discovery_token_file }})
+ZONE_NAME="{{ cf_dns_discovery_zone }}"
+OUTFILE="{{ cf_dns_discovery_output_dir }}/{{ cf_dns_discovery_zone | replace('.', '_') }}-targets.json"
+TMPFILE="${OUTFILE}.tmp"
+
+ZONE_ID=$(curl -sf "https://api.cloudflare.com/client/v4/zones?name=${ZONE_NAME}" \
+  -H "Authorization: Bearer ${CF_TOKEN}" | \
+  jq -r '.result[0].id')
+
+if [ -z "$ZONE_ID" ] || [ "$ZONE_ID" = "null" ]; then
+  echo "Failed to get zone ID for ${ZONE_NAME}" >&2
+  exit 1
+fi
+
+curl -sf "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?per_page=100" \
+  -H "Authorization: Bearer ${CF_TOKEN}" | \
+  jq '[{"targets": [.result[] | select(.type == "A" or .type == "CNAME") | .name] | unique | map("https://" + .)}]' \
+  > "$TMPFILE"
+
+mv "$TMPFILE" "$OUTFILE"

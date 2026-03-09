@@ -1,0 +1,103 @@
+---
+# mail.xy0.org runs CentOS 7 (EOL) which only has Python 3.6 available.
+# Ansible 2.20 requires Python 3.9+ on managed nodes. All tasks here use
+# the `raw` module which communicates over SSH without a Python interpreter.
+- name: External Server Setup
+  hosts: external
+  become: true
+  gather_facts: false
+  tasks:
+
+    # ── Packages ──────────────────────────────────────────────────────────────
+    - name: Install common packages
+      ansible.builtin.raw: yum install -y curl jq unzip tmux
+      changed_when: false
+
+    # ── User setup ────────────────────────────────────────────────────────────
+    - name: Create elw user
+      ansible.builtin.raw: id elw || useradd -m -s /bin/bash elw
+      changed_when: false
+
+    - name: Add elw to wheel group
+      ansible.builtin.raw: usermod -aG wheel elw
+      changed_when: false
+
+    - name: Create .ssh directory for elw
+      ansible.builtin.raw: mkdir -p /home/elw/.ssh && chmod 700 /home/elw/.ssh && chown elw:elw /home/elw/.ssh
+      changed_when: false
+
+    - name: Set authorized key for elw from GitHub
+      ansible.builtin.raw: |
+        curl -sf https://github.com/tedwardd.keys > /home/elw/.ssh/authorized_keys
+        chmod 600 /home/elw/.ssh/authorized_keys
+        chown elw:elw /home/elw/.ssh/authorized_keys
+      changed_when: false
+
+    # ── Blackbox Exporter ─────────────────────────────────────────────────────
+    - name: Create blackbox_exporter system user
+      ansible.builtin.raw: id blackbox_exporter || useradd --no-create-home --shell /bin/false blackbox_exporter
+      changed_when: false
+
+    - name: Download blackbox_exporter
+      ansible.builtin.raw: |
+        if [ ! -f /usr/local/bin/blackbox_exporter ]; then
+          curl -sfL https://github.com/prometheus/blackbox_exporter/releases/download/v0.25.0/blackbox_exporter-0.25.0.linux-amd64.tar.gz \
+            | tar -xzf - -C /tmp/
+          cp /tmp/blackbox_exporter-0.25.0.linux-amd64/blackbox_exporter /usr/local/bin/
+          chmod 755 /usr/local/bin/blackbox_exporter
+        fi
+      changed_when: false
+
+    - name: Create blackbox_exporter config directory
+      ansible.builtin.raw: mkdir -p /etc/blackbox_exporter
+      changed_when: false
+
+    - name: Write blackbox_exporter config
+      ansible.builtin.raw: |
+        cat > /etc/blackbox_exporter/config.yml << 'EOF'
+        modules:
+          http_2xx:
+            prober: http
+            timeout: 10s
+            http:
+              valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+              valid_status_codes: []
+              follow_redirects: true
+              preferred_ip_protocol: "ip4"
+        EOF
+      changed_when: false
+
+    - name: Write blackbox_exporter systemd unit
+      ansible.builtin.raw: |
+        cat > /etc/systemd/system/blackbox_exporter.service << 'EOF'
+        [Unit]
+        Description=Blackbox Exporter
+        After=network-online.target
+        Wants=network-online.target
+
+        [Service]
+        User=blackbox_exporter
+        Group=blackbox_exporter
+        Type=simple
+        ExecStart=/usr/local/bin/blackbox_exporter --config.file=/etc/blackbox_exporter/config.yml
+        Restart=on-failure
+
+        [Install]
+        WantedBy=multi-user.target
+        EOF
+        systemctl daemon-reload
+      changed_when: false
+
+    - name: Enable and start blackbox_exporter
+      ansible.builtin.raw: |
+        systemctl enable blackbox_exporter
+        systemctl start blackbox_exporter || systemctl restart blackbox_exporter
+      changed_when: false
+
+    # ── Firewall ──────────────────────────────────────────────────────────────
+    - name: Allow blackbox_exporter from Tailscale network only
+      ansible.builtin.raw: |
+        firewall-cmd --permanent --query-rich-rule='rule family="ipv4" source address="100.64.0.0/10" port port="9115" protocol="tcp" accept' 2>/dev/null \
+          || firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="100.64.0.0/10" port port="9115" protocol="tcp" accept'
+        firewall-cmd --reload
+      changed_when: false

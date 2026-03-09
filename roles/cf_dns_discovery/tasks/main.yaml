@@ -1,0 +1,54 @@
+---
+- name: Create Cloudflare config directory
+  ansible.builtin.file:
+    path: /etc/cloudflare
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+
+- name: Deploy Cloudflare API token
+  ansible.builtin.copy:
+    content: "{{ cloudflare_api_token }}"
+    dest: "{{ cf_dns_discovery_token_file }}"
+    mode: '0600'
+    owner: root
+    group: root
+  no_log: true
+
+- name: Create prometheus file_sd directory
+  ansible.builtin.file:
+    path: "{{ cf_dns_discovery_output_dir }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Deploy CF DNS discovery script
+  ansible.builtin.template:
+    src: cf-dns-discovery.sh.j2
+    dest: /usr/local/bin/cf-dns-discovery
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Deploy CF DNS discovery systemd service
+  ansible.builtin.copy:
+    src: cf-dns-discovery.service
+    dest: /etc/systemd/system/cf-dns-discovery.service
+    mode: '0644'
+  notify: reload systemd
+
+- name: Deploy CF DNS discovery systemd timer
+  ansible.builtin.copy:
+    src: cf-dns-discovery.timer
+    dest: /etc/systemd/system/cf-dns-discovery.timer
+    mode: '0644'
+  notify: reload systemd
+
+- name: Enable and start CF DNS discovery timer
+  ansible.builtin.systemd:
+    name: cf-dns-discovery.timer
+    state: started
+    enabled: true
+    daemon_reload: true
