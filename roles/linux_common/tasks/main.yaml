@@ -16,4 +16,3 @@
 
 - name: Install node_exporter
   ansible.builtin.import_tasks: node_exporter.yaml
-  become: true
