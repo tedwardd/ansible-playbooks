@@ -16,3 +16,6 @@
 
 - name: Install node_exporter
   ansible.builtin.import_tasks: node_exporter.yaml
+
+- name: Install fail2ban-exporter
+  ansible.builtin.import_tasks: fail2ban_exporter.yaml

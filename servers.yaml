@@ -3,6 +3,8 @@
   hosts: jumpstar
   become: true
   vars:
+    ebpf_net_exporter_enabled: false
+    fail2ban_exporter_enabled: true
     local_users:
       - userid: elw
         gh_id: tedwardd
@@ -15,6 +17,7 @@
         bantime_increment: true
         bantime_factor: 2
         backend: systemd
+        journalmatch: _SYSTEMD_UNIT=ssh.service _COMM=sshd
       - name: nginx-http-auth
         port: http,https
         logpath: /var/log/nginx/error.log
@@ -36,6 +39,16 @@
     - role: linux_common
     - role: oefenweb.fail2ban
     - role: promtail
+- name: MiniStar Configs
+  hosts: ministar
+  vars:
+    ebpf_net_exporter_enabled: false
+    local_users:
+      - userid: elw
+        gh_id: tedwardd
+        sudo: true
+  roles:
+    - role: linux_common
 - name: Jupiter Setup
   hosts: jupiter
   become: true

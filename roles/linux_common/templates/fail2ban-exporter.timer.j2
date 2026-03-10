@@ -1,0 +1,11 @@
+[Unit]
+Description=Run fail2ban textfile collector every minute
+Requires=fail2ban-exporter.service
+
+[Timer]
+OnBootSec=30
+OnUnitActiveSec={{ fail2ban_exporter_interval }}
+Unit=fail2ban-exporter.service
+
+[Install]
+WantedBy=timers.target

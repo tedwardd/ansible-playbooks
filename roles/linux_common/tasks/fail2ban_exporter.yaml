@@ -1,0 +1,63 @@
+---
+- name: Deploy fail2ban textfile collector script
+  ansible.builtin.copy:
+    dest: /usr/local/bin/fail2ban-textfile-collector
+    owner: root
+    group: root
+    mode: "0755"
+    content: |
+      #!/bin/sh
+      # Writes fail2ban metrics to node_exporter textfile collector directory.
+      set -e
+      OUTFILE="{{ fail2ban_exporter_textfile_dir }}/fail2ban.prom"
+      TMPFILE="${OUTFILE}.tmp"
+
+      jails=$(fail2ban-client status | awk '/Jail list:/{gsub(/,/,""); for(i=4;i<=NF;i++) print $i}')
+
+      printf '' > "$TMPFILE"
+
+      for jail in $jails; do
+        status=$(fail2ban-client status "$jail")
+        banned=$(echo "$status" | awk '/Currently banned:/{print $NF}')
+        failed=$(echo "$status" | awk '/Currently failed:/{print $NF}')
+        total_failed=$(echo "$status" | awk '/Total failed:/{print $NF}')
+        total_banned=$(echo "$status" | awk '/Total banned:/{print $NF}')
+
+        printf 'fail2ban_banned_ip_count{jail="%s"} %s\n' "$jail" "$banned" >> "$TMPFILE"
+        printf 'fail2ban_failed_current{jail="%s"} %s\n' "$jail" "$failed" >> "$TMPFILE"
+        printf 'fail2ban_total_failed{jail="%s"} %s\n' "$jail" "$total_failed" >> "$TMPFILE"
+        printf 'fail2ban_total_banned{jail="%s"} %s\n' "$jail" "$total_banned" >> "$TMPFILE"
+      done
+
+      mv "$TMPFILE" "$OUTFILE"
+  notify: Restart fail2ban-exporter-timer
+  when: fail2ban_exporter_enabled
+
+- name: Deploy fail2ban-exporter systemd service
+  ansible.builtin.template:
+    src: fail2ban-exporter.service.j2
+    dest: /etc/systemd/system/fail2ban-exporter.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart fail2ban-exporter-timer
+  when: fail2ban_exporter_enabled
+
+- name: Deploy fail2ban-exporter systemd timer
+  ansible.builtin.template:
+    src: fail2ban-exporter.timer.j2
+    dest: /etc/systemd/system/fail2ban-exporter.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart fail2ban-exporter-timer
+  when: fail2ban_exporter_enabled
+
+- name: Enable and start fail2ban-exporter timer
+  ansible.builtin.systemd:
+    name: fail2ban-exporter.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: fail2ban_exporter_enabled
+  ignore_errors: "{{ ansible_check_mode }}"

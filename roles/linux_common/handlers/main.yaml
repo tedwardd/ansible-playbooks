@@ -4,3 +4,9 @@
     name: ebpf-net-exporter
     state: restarted
     daemon_reload: true
+
+- name: Restart fail2ban-exporter-timer
+  ansible.builtin.systemd:
+    name: fail2ban-exporter.timer
+    state: restarted
+    daemon_reload: true

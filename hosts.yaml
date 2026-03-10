@@ -6,9 +6,6 @@ all:
   children:
     laptops:
       hosts:
-        smackbook:
-          ansible_host: 127.0.0.1
-          ansible_user: twood5
         xbook2:
           ansible_host: 127.0.0.1
       vars:
@@ -16,16 +13,16 @@ all:
     servers:
       hosts:
         jupiter:
-          ansible_host: 192.168.1.58
+          ansible_host: jupiter.tail167587.ts.net
         jumpstar:
-          ansible_host: 100.104.207.54
+          ansible_host: jumpstar.tail167587.ts.net
         ministar:
-          ansible_host: ministar
+          ansible_host: ministar.tail167587.ts.net
       vars:
         host_type: server
     external:
       hosts:
         mail:
-          ansible_host: mail
+          ansible_host: mail.xy0.org
       vars:
         host_type: server
