@@ -69,7 +69,7 @@
   notify: Restart opendkim
 
 - name: Enable and start opendkim
-  ansible.builtin.service:
+  ansible.builtin.systemd:
     name: opendkim
     enabled: true
     state: started
