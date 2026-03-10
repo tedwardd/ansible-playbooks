@@ -27,3 +27,4 @@
           - libvirt-dev
           - ruby-libvirt
       become: true
+      when: ansible_os_family == 'Debian'
