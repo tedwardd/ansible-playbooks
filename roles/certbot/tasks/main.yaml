@@ -49,6 +49,8 @@
   ansible.builtin.copy:
     dest: /etc/letsencrypt/renewal-hooks/deploy/reload-mail.sh
     mode: "0755"
+    owner: root
+    group: root
     content: |
       #!/bin/sh
       systemctl reload postfix || true
