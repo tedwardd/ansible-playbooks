@@ -1,0 +1,85 @@
+---
+- name: Install opendkim
+  ansible.builtin.apt:
+    name:
+      - opendkim
+      - opendkim-tools
+    state: present
+    update_cache: true
+
+- name: Create DKIM key directory
+  ansible.builtin.file:
+    path: "{{ opendkim_key_dir }}"
+    state: directory
+    owner: opendkim
+    group: opendkim
+    mode: "0700"
+
+- name: Generate DKIM keypair if not present
+  ansible.builtin.command:
+    cmd: >
+      opendkim-genkey -b 2048
+      -d {{ opendkim_domain }}
+      -D {{ opendkim_key_dir }}
+      -s {{ opendkim_selector }} -v
+    creates: "{{ opendkim_key_dir }}/{{ opendkim_selector }}.private"
+  notify: Restart opendkim
+
+- name: Set ownership of DKIM keys
+  ansible.builtin.file:
+    path: "{{ opendkim_key_dir }}"
+    owner: opendkim
+    group: opendkim
+    recurse: true
+
+- name: Deploy opendkim.conf
+  ansible.builtin.template:
+    src: opendkim.conf.j2
+    dest: /etc/opendkim.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart opendkim
+
+- name: Write KeyTable
+  ansible.builtin.copy:
+    dest: /etc/opendkim/KeyTable
+    content: "{{ opendkim_selector }}._domainkey.{{ opendkim_domain }} {{ opendkim_domain }}:{{ opendkim_selector }}:{{ opendkim_key_dir }}/{{ opendkim_selector }}.private\n"
+    owner: opendkim
+    group: opendkim
+    mode: "0640"
+  notify: Restart opendkim
+
+- name: Write SigningTable
+  ansible.builtin.copy:
+    dest: /etc/opendkim/SigningTable
+    content: "*@{{ opendkim_domain }} {{ opendkim_selector }}._domainkey.{{ opendkim_domain }}\n"
+    owner: opendkim
+    group: opendkim
+    mode: "0640"
+  notify: Restart opendkim
+
+- name: Write TrustedHosts
+  ansible.builtin.copy:
+    dest: /etc/opendkim/TrustedHosts
+    content: "127.0.0.1\nlocalhost\n{{ mail_hostname }}\n"
+    owner: opendkim
+    group: opendkim
+    mode: "0640"
+  notify: Restart opendkim
+
+- name: Enable and start opendkim
+  ansible.builtin.service:
+    name: opendkim
+    enabled: true
+    state: started
+
+- name: Print DKIM public key (add to DNS after provisioning)
+  ansible.builtin.command:
+    cmd: "cat {{ opendkim_key_dir }}/{{ opendkim_selector }}.txt"
+  register: dkim_pubkey
+  changed_when: false
+
+- name: Show DKIM public key
+  ansible.builtin.debug:
+    msg: "{{ dkim_pubkey.stdout }}"

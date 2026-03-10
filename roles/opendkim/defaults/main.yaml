@@ -1,0 +1,5 @@
+---
+opendkim_domain: "{{ mail_domain }}"
+opendkim_selector: default
+opendkim_key_dir: "/etc/opendkim/keys/{{ opendkim_domain }}"
+opendkim_socket: local:/var/run/opendkim/opendkim.sock
