@@ -1,1 +1,4 @@
 ---
+# Certificate renewal post-hooks are handled via the deploy hook script at
+# /etc/letsencrypt/renewal-hooks/deploy/reload-mail.sh (written by tasks/main.yaml).
+# No Ansible handlers are needed for the certbot role.
