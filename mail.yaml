@@ -1,0 +1,18 @@
+---
+- name: Mail Server Setup
+  hosts: mail
+  become: true
+  vars:
+    local_users:
+      - userid: elw
+        gh_id: tedwardd
+        sudo: true
+    fail2ban_exporter_enabled: true
+  roles:
+    - role: linux_common
+    - role: certbot
+    - role: opendkim
+    - role: postfix
+    - role: dovecot
+    - role: oefenweb.fail2ban
+    - role: promtail
