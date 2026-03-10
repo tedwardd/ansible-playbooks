@@ -7,7 +7,7 @@ all:
     laptops:
       hosts:
         xbook2:
-          ansible_host: 127.0.0.1
+          ansible_host: xbook.tail167587.ts.net
       vars:
         host_type: workstation
     servers:
@@ -23,6 +23,6 @@ all:
     external:
       hosts:
         mail:
-          ansible_host: mail.xy0.org
+          ansible_host: mail.tail167587.ts.net
       vars:
         host_type: server
