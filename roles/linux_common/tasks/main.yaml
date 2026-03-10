@@ -11,8 +11,8 @@
   become: true
 
 - name: Install ebpf-net-exporter
-  ansible.builtin.import_tasks: ebpf_net_exporter.yaml
-  become: true
+  ansible.builtin.include_tasks: ebpf_net_exporter.yaml
+  when: host_type == 'server'
 
 - name: Install node_exporter
   ansible.builtin.import_tasks: node_exporter.yaml

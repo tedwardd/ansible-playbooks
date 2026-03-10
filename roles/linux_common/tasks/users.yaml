@@ -33,7 +33,7 @@
   ansible.builtin.user:
     name: "{{ item.userid }}"
     state: present
-    groups: sudo
+    groups: "{{ sudo_group_name }}"
     append: true
   loop: "{{ local_users }}"
   when: item.sudo | bool

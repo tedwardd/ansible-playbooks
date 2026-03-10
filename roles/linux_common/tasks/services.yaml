@@ -1,4 +1,4 @@
 - name: Enable SSH
   ansible.builtin.service:
-    name: ssh
+    name: "{{ ssh_service_name }}"
     state: started

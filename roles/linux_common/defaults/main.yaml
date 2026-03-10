@@ -1,4 +1,7 @@
 ---
+ssh_service_name: "{{ 'sshd' if ansible_os_family == 'Archlinux' else 'ssh' }}"
+sudo_group_name: "{{ 'sudo' if ansible_os_family == 'Debian' else 'wheel' }}"
+
 ebpf_net_exporter_enabled: true
 ebpf_net_exporter_version: "20260308.9"
 ebpf_net_exporter_install_path: /usr/local/bin/ebpf-net-exporter
