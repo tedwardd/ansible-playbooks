@@ -1,0 +1,2 @@
+---
+dovecot_mail_location: "maildir:~/Maildir"
