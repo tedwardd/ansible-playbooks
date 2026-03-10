@@ -2,10 +2,12 @@
 - name: Install Vagrant GPG key and add apt source
   ansible.builtin.include_tasks:
     file: gpg.yaml
+  when: ansible_os_family == 'Debian'
 
 - name: Install vagrant application
   ansible.builtin.include_tasks:
     file: install.yaml
+  when: ansible_os_family == 'Debian'
 
 - name: Install vagrant plugins
   ansible.builtin.include_tasks:
