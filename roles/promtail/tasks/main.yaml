@@ -1,0 +1,73 @@
+---
+- name: Add Grafana apt key
+  ansible.builtin.get_url:
+    url: https://apt.grafana.com/gpg.key
+    dest: /etc/apt/trusted.gpg.d/grafana.asc
+    mode: "0644"
+
+- name: Add Grafana apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/trusted.gpg.d/grafana.asc] https://apt.grafana.com stable main"
+    filename: grafana
+
+- name: Install promtail and geoipupdate
+  ansible.builtin.apt:
+    name:
+      - "promtail={{ promtail_version }}"
+      - geoipupdate
+    state: present
+    update_cache: true
+
+- name: Create promtail state directory
+  ansible.builtin.file:
+    path: /var/lib/promtail
+    state: directory
+    owner: promtail
+    group: root
+    mode: "0755"
+
+- name: Add promtail user to adm group (log access)
+  ansible.builtin.user:
+    name: promtail
+    groups: adm
+    append: true
+
+- name: Deploy GeoIP update config
+  ansible.builtin.template:
+    src: GeoIP.conf.j2
+    dest: /etc/GeoIP.conf
+    owner: root
+    group: root
+    mode: "0640"
+  notify: Run geoipupdate
+
+- name: Create GeoIP database directory
+  ansible.builtin.file:
+    path: /usr/share/GeoIP
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Schedule weekly GeoIP database update
+  ansible.builtin.cron:
+    name: geoipupdate
+    weekday: "3"
+    hour: "3"
+    minute: "0"
+    job: /usr/bin/geoipupdate
+
+- name: Deploy promtail config
+  ansible.builtin.template:
+    src: promtail-config.yaml.j2
+    dest: /etc/promtail/config.yml
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart promtail
+
+- name: Enable and start promtail
+  ansible.builtin.service:
+    name: promtail
+    enabled: true
+    state: started

@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Cloudflare DNS discovery every 15 minutes ({{ cf_dns_discovery_zone }})
+Requires=cf-dns-discovery-{{ cf_dns_discovery_zone | replace('.', '_') }}.service
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=15m
+Unit=cf-dns-discovery-{{ cf_dns_discovery_zone | replace('.', '_') }}.service
+
+[Install]
+WantedBy=timers.target

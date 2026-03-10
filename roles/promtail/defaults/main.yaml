@@ -1,0 +1,5 @@
+---
+promtail_version: "3.4.2"
+promtail_loki_url: "https://loki.tail167587.ts.net/loki/api/v1/push"
+promtail_http_listen_port: 9080
+# maxmind_account_id and maxmind_license_key must be set in host_vars

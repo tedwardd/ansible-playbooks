@@ -1,0 +1,9 @@
+---
+- name: Run geoipupdate
+  ansible.builtin.command: /usr/bin/geoipupdate
+  notify: Restart promtail
+
+- name: Restart promtail
+  ansible.builtin.service:
+    name: promtail
+    state: restarted
