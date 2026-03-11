@@ -1,0 +1,3 @@
+---
+postfix_myhostname: "{{ mail_hostname }}"
+postfix_mydomain: "{{ mail_domain }}"

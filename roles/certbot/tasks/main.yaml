@@ -1,0 +1,57 @@
+---
+- name: Open port 80 for standalone cert issuance
+  community.general.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+
+- name: Install snapd
+  ansible.builtin.apt:
+    name: snapd
+    state: present
+    update_cache: true
+
+- name: Install certbot snap
+  community.general.snap:
+    name: certbot
+    classic: true
+    state: present
+
+- name: Symlink certbot to /usr/bin
+  ansible.builtin.file:
+    src: /snap/bin/certbot
+    dest: /usr/bin/certbot
+    state: link
+
+- name: Issue certificate if not present
+  ansible.builtin.command:
+    cmd: >
+      certbot certonly --standalone
+      --non-interactive --agree-tos
+      --email {{ certbot_admin_email }}
+      -d {{ certbot_domain }}
+    creates: "{{ certbot_cert_dir }}/fullchain.pem"
+
+- name: Close port 80 after cert issuance
+  community.general.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+    delete: true
+
+- name: Enable certbot renewal timer
+  ansible.builtin.systemd:
+    name: snap.certbot.renew.timer
+    enabled: true
+    state: started
+
+- name: Write post-renewal hook to reload mail services
+  ansible.builtin.copy:
+    dest: /etc/letsencrypt/renewal-hooks/deploy/reload-mail.sh
+    mode: "0755"
+    owner: root
+    group: root
+    content: |
+      #!/bin/sh
+      systemctl reload postfix || true
+      systemctl reload dovecot || true

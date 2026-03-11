@@ -1,0 +1,29 @@
+# TODO: populate from live server audit (postconf -n)
+# Managed by Ansible — do not edit manually
+
+myhostname = {{ postfix_myhostname }}
+mydomain = {{ postfix_mydomain }}
+myorigin = $mydomain
+inet_interfaces = all
+inet_protocols = ipv4
+mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+
+# TLS
+smtpd_tls_cert_file = /etc/letsencrypt/live/{{ mail_hostname }}/fullchain.pem
+smtpd_tls_key_file = /etc/letsencrypt/live/{{ mail_hostname }}/privkey.pem
+smtpd_use_tls = yes
+smtpd_tls_security_level = may
+smtp_tls_security_level = may
+smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+
+# SASL auth via Dovecot
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+smtpd_sasl_auth_enable = yes
+smtpd_recipient_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination
+
+# DKIM milter
+milter_default_action = accept
+smtpd_milters = unix:/var/run/opendkim/opendkim.sock
+non_smtpd_milters = unix:/var/run/opendkim/opendkim.sock

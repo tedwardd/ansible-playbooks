@@ -1,0 +1,4 @@
+---
+certbot_admin_email: "{{ mail_admin_email }}"
+certbot_domain: "{{ mail_hostname }}"
+certbot_cert_dir: "/etc/letsencrypt/live/{{ certbot_domain }}"

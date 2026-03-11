@@ -1,0 +1,57 @@
+---
+- name: Install Dovecot
+  ansible.builtin.apt:
+    name:
+      - dovecot-core
+      - dovecot-imapd
+      - dovecot-lmtpd
+    state: present
+    update_cache: true
+
+- name: Deploy 10-ssl.conf
+  ansible.builtin.template:
+    src: 10-ssl.conf.j2
+    dest: /etc/dovecot/conf.d/10-ssl.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload dovecot
+
+- name: Deploy 10-mail.conf
+  ansible.builtin.template:
+    src: 10-mail.conf.j2
+    dest: /etc/dovecot/conf.d/10-mail.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload dovecot
+
+- name: Deploy 10-auth.conf
+  ansible.builtin.template:
+    src: 10-auth.conf.j2
+    dest: /etc/dovecot/conf.d/10-auth.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload dovecot
+
+- name: Deploy 10-master.conf
+  ansible.builtin.template:
+    src: 10-master.conf.j2
+    dest: /etc/dovecot/conf.d/10-master.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload dovecot
+
+- name: Enable and start Dovecot
+  ansible.builtin.systemd:
+    name: dovecot
+    enabled: true
+    state: started
+
+- name: Open IMAPS port in UFW
+  community.general.ufw:
+    rule: allow
+    port: "993"
+    proto: tcp

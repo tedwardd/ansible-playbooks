@@ -1,0 +1,13 @@
+# Managed by Ansible — do not edit manually
+
+Mode                    sv
+PidFile                 /var/run/opendkim/opendkim.pid
+Socket                  {{ opendkim_socket }}
+Syslog                  yes
+SyslogSuccess           yes
+LogWhy                  yes
+UserID                  opendkim:opendkim
+KeyTable                refile:/etc/opendkim/KeyTable
+SigningTable            refile:/etc/opendkim/SigningTable
+ExternalIgnoreList      refile:/etc/opendkim/TrustedHosts
+InternalHosts           refile:/etc/opendkim/TrustedHosts

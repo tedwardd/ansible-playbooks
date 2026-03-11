@@ -1,0 +1,4 @@
+---
+roles:
+  - name: oefenweb.fail2ban
+    src: https://github.com/oefenweb/ansible-fail2ban

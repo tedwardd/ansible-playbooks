@@ -1,0 +1,11 @@
+# Managed by Ansible — do not edit manually
+# TODO: Populate full content from live server audit (sudo cat /etc/dovecot/conf.d/10-master.conf)
+# The following Postfix SASL auth socket block MUST be present:
+
+service auth {
+  unix_listener /var/spool/postfix/private/auth {
+    mode = 0660
+    user = postfix
+    group = postfix
+  }
+}
