@@ -1,4 +1,4 @@
 out.log
 password
-host_vars/
+inventory/host_vars/
 .worktrees/
