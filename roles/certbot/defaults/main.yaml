@@ -1,4 +1,22 @@
 ---
-certbot_admin_email: "{{ mail_admin_email }}"
-certbot_domain: "{{ mail_hostname }}"
-certbot_cert_dir: "/etc/letsencrypt/live/{{ certbot_domain }}"
+# Domain the certificate is issued for
+certbot_domain: ""
+
+# Email for Let's Encrypt notifications
+certbot_email: ""
+
+# Path certbot stores live certs for this domain
+certbot_live_dir: "/etc/letsencrypt/live/{{ certbot_domain }}"
+
+# acme-dns hook script path on the remote
+certbot_acmedns_hook: /etc/letsencrypt/acme-dns-auth.py
+
+# acme-dns credential JSON path on the remote
+certbot_acmedns_storage: /etc/letsencrypt/acmedns.json
+
+# Credential dict — set in host_vars/<host>.secret.yaml
+# Structure: { "<domain>": { "username": "", "password": "", "fulldomain": "", "subdomain": "", "allowfrom": [] } }
+certbot_acmedns_credentials: {}
+
+# Directory node_exporter reads textfile metrics from
+certbot_textfile_dir: /var/lib/node_exporter

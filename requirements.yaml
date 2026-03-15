@@ -6,5 +6,8 @@ roles:
   - name: geerlingguy.nginx
     src: geerlingguy.nginx
 
+  - name: geerlingguy.certbot
+    src: geerlingguy.certbot
+
 collections:
   - name: prometheus.prometheus

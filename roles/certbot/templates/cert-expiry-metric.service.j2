@@ -1,0 +1,7 @@
+[Unit]
+Description=Write cert expiry textfile metric for node_exporter
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/etc/letsencrypt/renewal-hooks/deploy/cert-expiry-metric.sh

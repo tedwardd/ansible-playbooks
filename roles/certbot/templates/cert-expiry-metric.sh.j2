@@ -1,0 +1,29 @@
+#!/bin/bash
+# Managed by Ansible — do not edit manually
+# Writes a node_exporter textfile metric with the cert expiry timestamp.
+# Called as a certbot deploy hook after renewal, and daily via systemd timer.
+
+CERT="{{ certbot_live_dir }}/cert.pem"
+OUTFILE="{{ certbot_textfile_dir }}/cert_expiry.prom"
+TMPFILE="${OUTFILE}.$$"
+
+if [[ ! -f "$CERT" ]]; then
+  echo "cert-expiry-metric: cert not found at $CERT" >&2
+  exit 1
+fi
+
+EXPIRY_DATE=$(openssl x509 -in "$CERT" -noout -enddate 2>/dev/null | cut -d= -f2)
+EXPIRY_EPOCH=$(date -d "$EXPIRY_DATE" +%s 2>/dev/null)
+
+if [[ -z "$EXPIRY_EPOCH" ]]; then
+  echo "cert-expiry-metric: failed to parse expiry date" >&2
+  exit 1
+fi
+
+cat > "$TMPFILE" <<EOF
+# HELP cert_expiry_timestamp_seconds Unix timestamp when the TLS certificate expires
+# TYPE cert_expiry_timestamp_seconds gauge
+cert_expiry_timestamp_seconds{domain="{{ certbot_domain }}"} ${EXPIRY_EPOCH}
+EOF
+
+mv "$TMPFILE" "$OUTFILE"

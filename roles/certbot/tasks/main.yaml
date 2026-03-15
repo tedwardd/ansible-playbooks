@@ -1,57 +1,79 @@
 ---
-- name: Open port 80 for standalone cert issuance
-  community.general.ufw:
-    rule: allow
-    port: "80"
-    proto: tcp
-
-- name: Install snapd
+- name: Install python3-requests (required by acme-dns-auth.py)
   ansible.builtin.apt:
-    name: snapd
+    name: python3-requests
     state: present
-    update_cache: true
+    update_cache: false
 
-- name: Install certbot snap
-  community.general.snap:
-    name: certbot
-    classic: true
-    state: present
+- name: Deploy acme-dns-auth.py hook script
+  ansible.builtin.template:
+    src: acme-dns-auth.py.j2
+    dest: "{{ certbot_acmedns_hook }}"
+    owner: root
+    group: root
+    mode: "0755"
 
-- name: Symlink certbot to /usr/bin
+- name: Deploy acmedns.json credentials
+  ansible.builtin.copy:
+    content: "{{ certbot_acmedns_credentials | to_json }}\n"
+    dest: "{{ certbot_acmedns_storage }}"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Ensure renewal-hooks/deploy directory exists
   ansible.builtin.file:
-    src: /snap/bin/certbot
-    dest: /usr/bin/certbot
-    state: link
+    path: /etc/letsencrypt/renewal-hooks/deploy
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
 
-- name: Issue certificate if not present
-  ansible.builtin.command:
-    cmd: >
-      certbot certonly --standalone
-      --non-interactive --agree-tos
-      --email {{ certbot_admin_email }}
-      -d {{ certbot_domain }}
-    creates: "{{ certbot_cert_dir }}/fullchain.pem"
+- name: Deploy nginx reload hook (runs after every successful renewal)
+  ansible.builtin.template:
+    src: reload-nginx.sh.j2
+    dest: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+    owner: root
+    group: root
+    mode: "0755"
 
-- name: Close port 80 after cert issuance
-  community.general.ufw:
-    rule: allow
-    port: "80"
-    proto: tcp
-    delete: true
+- name: Deploy cert-expiry textfile metric hook (runs after every successful renewal)
+  ansible.builtin.template:
+    src: cert-expiry-metric.sh.j2
+    dest: /etc/letsencrypt/renewal-hooks/deploy/cert-expiry-metric.sh
+    owner: root
+    group: root
+    mode: "0755"
 
-- name: Enable certbot renewal timer
+- name: Deploy cert-expiry-metric systemd service (daily refresh)
+  ansible.builtin.template:
+    src: cert-expiry-metric.service.j2
+    dest: /etc/systemd/system/cert-expiry-metric.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload systemd
+
+- name: Deploy cert-expiry-metric systemd timer (daily refresh)
+  ansible.builtin.template:
+    src: cert-expiry-metric.timer.j2
+    dest: /etc/systemd/system/cert-expiry-metric.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload systemd
+
+- name: Flush handlers so systemd daemon-reload runs before timer start
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure certbot systemd timer is enabled and running
   ansible.builtin.systemd:
-    name: snap.certbot.renew.timer
+    name: certbot.timer
     enabled: true
     state: started
 
-- name: Write post-renewal hook to reload mail services
-  ansible.builtin.copy:
-    dest: /etc/letsencrypt/renewal-hooks/deploy/reload-mail.sh
-    mode: "0755"
-    owner: root
-    group: root
-    content: |
-      #!/bin/sh
-      systemctl reload postfix || true
-      systemctl reload dovecot || true
+- name: Ensure cert-expiry-metric timer is enabled and running
+  ansible.builtin.systemd:
+    name: cert-expiry-metric.timer
+    enabled: true
+    state: started
