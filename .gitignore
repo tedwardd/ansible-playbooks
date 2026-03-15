@@ -2,3 +2,5 @@ out.log
 password
 inventory/host_vars/
 .worktrees/
+roles/geerlingguy.nginx/
+roles/oefenweb.fail2ban/

@@ -54,6 +54,12 @@
         promtail_scrape_fail2ban: true
     - role: geerlingguy.nginx
   tasks:
+    - name: Remove legacy 'root' nginx vhost from sites-enabled
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/root
+        state: absent
+      notify: reload nginx
+
     - name: Deploy SSL cert snippet
       ansible.builtin.copy:
         content: |

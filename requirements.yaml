@@ -5,3 +5,6 @@ roles:
 
   - name: geerlingguy.nginx
     src: geerlingguy.nginx
+
+collections:
+  - name: prometheus.prometheus
