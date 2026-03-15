@@ -35,6 +35,16 @@
         bantime: 1w
         findtime: 1d
         maxretry: 5
+    # nginx proxy locations — add new services here
+    nginx_proxy_locations:
+      - path: /miniflux
+        backend: 192.168.1.58   # Traefik on jupiter
+    nginx_remove_default_vhost: true
+    nginx_vhosts:
+      - server_name: techmachine.net
+        template: "{{ playbook_dir }}/templates/jumpstar-vhost.j2"
+        filename: "techmachine.net.conf"
+        state: present
   roles:
     - role: linux_common
     - role: oefenweb.fail2ban
@@ -42,6 +52,18 @@
       vars:
         promtail_scrape_nginx: true
         promtail_scrape_fail2ban: true
+    - role: geerlingguy.nginx
+  tasks:
+    - name: Deploy SSL cert snippet
+      ansible.builtin.copy:
+        content: |
+          ssl_certificate /etc/nginx/certs/fullchain.pem;
+          ssl_certificate_key /etc/nginx/certs/privkey.pem;
+        dest: /etc/nginx/snippets/certs.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: reload nginx
 - name: MiniStar Configs
   hosts: ministar
   vars:

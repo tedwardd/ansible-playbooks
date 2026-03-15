@@ -1,0 +1,23 @@
+server {
+    listen 80;
+    listen [::]:80;
+
+    listen 443      ssl;
+    listen [::]:443 ssl;
+
+    server_name {{ item.server_name }};
+
+    include snippets/certs.conf;
+
+{% for location in nginx_proxy_locations %}
+    location {{ location.path }}/ {
+        proxy_pass http://{{ location.backend }};
+        proxy_set_header Host $host;
+        proxy_redirect off;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+{% endfor %}
+}
