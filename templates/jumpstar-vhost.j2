@@ -7,7 +7,7 @@ server {
 
     server_name {{ item.server_name }};
 
-    include snippets/certs.conf;
+    include /etc/nginx/snippets/certs.conf;
 
 {% for location in nginx_proxy_locations %}
     location {{ location.path }}/ {

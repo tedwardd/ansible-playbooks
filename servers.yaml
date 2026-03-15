@@ -45,20 +45,39 @@
         template: "{{ playbook_dir }}/templates/jumpstar-vhost.j2"
         filename: "techmachine.net.conf"
         state: present
-  roles:
-    - role: linux_common
-    - role: oefenweb.fail2ban
-    - role: promtail
-      vars:
-        promtail_scrape_nginx: true
-        promtail_scrape_fail2ban: true
-    - role: geerlingguy.nginx
-  tasks:
-    - name: Remove legacy 'root' nginx vhost from sites-enabled
+    # local certbot role
+    certbot_domain: "techmachine.net"
+    certbot_email: "ted@techmachine.net"
+    # geerlingguy.certbot — issuance via acme-dns DNS-01, renewal timer managed by local certbot role
+    certbot_auto_renew: false
+    certbot_create_if_missing: true
+    certbot_create_standalone_stop_services: []
+    certbot_admin_email: "ted@techmachine.net"
+    certbot_certs:
+      - domains:
+          - "techmachine.net"
+          - "*.techmachine.net"
+    certbot_create_command: >-
+      {{ certbot_script }} certonly
+      --manual
+      --manual-auth-hook {{ certbot_acmedns_hook }}
+      --preferred-challenges dns
+      --noninteractive --agree-tos
+      --email {{ certbot_admin_email }}
+      --cert-name {{ cert_item.domains | first | regex_replace('^\*\.(.*)$', 'wildcard.\1') }}
+      -d {{ cert_item.domains | join(',') }}
+  pre_tasks:
+    - name: Load host secrets
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/inventory/host_vars/jumpstar.secret.yaml"
+
+    - name: Ensure nginx snippets directory exists
       ansible.builtin.file:
-        path: /etc/nginx/sites-enabled/root
-        state: absent
-      notify: reload nginx
+        path: /etc/nginx/snippets
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
 
     - name: Deploy SSL cert snippet
       ansible.builtin.copy:
@@ -69,7 +88,22 @@
         owner: root
         group: root
         mode: "0644"
-      notify: reload nginx
+
+    - name: Remove legacy 'root' nginx vhost from sites-enabled
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/root
+        state: absent
+
+  roles:
+    - role: linux_common
+    - role: oefenweb.fail2ban
+    - role: promtail
+      vars:
+        promtail_scrape_nginx: true
+        promtail_scrape_fail2ban: true
+    - role: geerlingguy.nginx
+    - role: certbot
+    - role: geerlingguy.certbot
 - name: MiniStar Configs
   hosts: ministar
   vars:
