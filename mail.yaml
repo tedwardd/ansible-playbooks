@@ -8,6 +8,18 @@
         gh_id: tedwardd
         sudo: true
     fail2ban_exporter_enabled: true
+    fail2ban_services:
+      - name: sshd
+        port: 22
+        maxretry: 5
+        bantime: 1h
+      - name: postfix-sasl
+        port: smtp,465,submission
+        filter: postfix-sasl
+        logpath: /var/log/maillog
+        maxretry: 3
+        bantime: 1h
+    fail2ban_filterd_path: "{{ playbook_dir }}/files/fail2ban/filter.d/"
   pre_tasks:
     - name: Install UFW
       ansible.builtin.apt:
@@ -34,3 +46,7 @@
     - role: dovecot
     - role: oefenweb.fail2ban
     - role: promtail
+      vars:
+        promtail_journal_units:
+          - postfix
+          - dovecot

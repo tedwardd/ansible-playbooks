@@ -1,4 +1,3 @@
-# TODO: populate from live server audit (postconf -n)
 # Managed by Ansible — do not edit manually
 
 myhostname = {{ postfix_myhostname }}
@@ -6,7 +5,11 @@ mydomain = {{ postfix_mydomain }}
 myorigin = $mydomain
 inet_interfaces = all
 inet_protocols = ipv4
-mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+mydestination = $myhostname, localhost.$mydomain, localhost
+
+# Virtual aliases
+virtual_alias_domains = {{ postfix_virtual_alias_domains | join(', ') }}
+virtual_alias_maps = hash:/etc/postfix/virtual
 
 # TLS
 smtpd_tls_cert_file = /etc/letsencrypt/live/{{ mail_hostname }}/fullchain.pem

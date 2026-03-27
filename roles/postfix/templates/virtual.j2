@@ -1,0 +1,4 @@
+# Managed by Ansible — do not edit manually
+{% for entry in postfix_virtual_aliases %}
+{{ entry.address }}    {{ entry.destination }}
+{% endfor %}

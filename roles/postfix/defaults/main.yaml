@@ -1,3 +1,19 @@
 ---
 postfix_myhostname: "{{ mail_hostname }}"
 postfix_mydomain: "{{ mail_domain }}"
+
+postfix_virtual_alias_domains:
+  - xy0.org
+  - k4k.pw
+
+postfix_virtual_aliases:
+  - address: "@xy0.org"
+    destination: "elw@localhost"
+  - address: "elw@xy0.org"
+    destination: "elw@localhost"
+  - address: "ted@xy0.org"
+    destination: "elw@localhost"
+  - address: "ted@k4k.pw"
+    destination: "elw@localhost"
+  - address: "k4k@k4k.pw"
+    destination: "elw@localhost"

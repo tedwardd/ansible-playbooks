@@ -101,3 +101,90 @@
           || firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="100.64.0.0/10" port port="9115" protocol="tcp" accept'
         firewall-cmd --reload
       changed_when: false
+
+    # ── Promtail ─────────────────────────────────────────────────────────────
+    - name: Create promtail system user
+      ansible.builtin.raw: id promtail || useradd --no-create-home --shell /bin/false promtail
+      changed_when: false
+
+    - name: Add promtail to systemd-journal group
+      ansible.builtin.raw: usermod -aG systemd-journal promtail
+      changed_when: false
+
+    - name: Download and install promtail
+      ansible.builtin.raw: |
+        if [ ! -f /usr/local/bin/promtail ] || ! /usr/local/bin/promtail --version 2>&1 | grep -q '3.4.2'; then
+          curl -sfL https://github.com/grafana/loki/releases/download/v3.4.2/promtail-linux-amd64.zip -o /tmp/promtail.zip
+          cd /tmp && unzip -o promtail.zip
+          cp /tmp/promtail-linux-amd64 /usr/local/bin/promtail
+          chmod 755 /usr/local/bin/promtail
+          rm -f /tmp/promtail.zip /tmp/promtail-linux-amd64
+        fi
+      changed_when: false
+
+    - name: Create promtail config directory
+      ansible.builtin.raw: mkdir -p /etc/promtail
+      changed_when: false
+
+    - name: Create promtail state directory
+      ansible.builtin.raw: mkdir -p /var/lib/promtail && chown promtail:promtail /var/lib/promtail
+      changed_when: false
+
+    - name: Write promtail config
+      ansible.builtin.raw: |
+        cat > /etc/promtail/config.yml << 'EOF'
+        server:
+          http_listen_port: 9080
+          grpc_listen_port: 0
+
+        positions:
+          filename: /var/lib/promtail/positions.yaml
+
+        clients:
+          - url: https://loki.tail167587.ts.net/loki/api/v1/push
+
+        scrape_configs:
+          - job_name: journal
+            journal:
+              max_age: 12h
+              labels:
+                job: systemd-journal
+                host: mail
+            relabel_configs:
+              - source_labels: ['__journal__systemd_unit']
+                target_label: unit
+              - source_labels: ['__journal_priority_keyword']
+                target_label: level
+              - source_labels: ['__journal__systemd_unit']
+                regex: 'postfix.service|dovecot.service'
+                action: keep
+        EOF
+      changed_when: false
+
+    - name: Write promtail systemd unit
+      ansible.builtin.raw: |
+        cat > /etc/systemd/system/promtail.service << 'EOF'
+        [Unit]
+        Description=Promtail Log Collector
+        After=network-online.target
+        Wants=network-online.target
+
+        [Service]
+        Type=simple
+        User=promtail
+        Group=promtail
+        ExecStart=/usr/local/bin/promtail -config.file=/etc/promtail/config.yml
+        Restart=on-failure
+        RestartSec=5s
+
+        [Install]
+        WantedBy=multi-user.target
+        EOF
+        systemctl daemon-reload
+      changed_when: false
+
+    - name: Enable and start promtail
+      ansible.builtin.raw: |
+        systemctl enable promtail
+        systemctl start promtail || systemctl restart promtail
+      changed_when: false

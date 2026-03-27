@@ -39,6 +39,9 @@
     - role: linux_common
     - role: oefenweb.fail2ban
     - role: promtail
+      vars:
+        promtail_scrape_nginx: true
+        promtail_scrape_fail2ban: true
 - name: MiniStar Configs
   hosts: ministar
   vars:

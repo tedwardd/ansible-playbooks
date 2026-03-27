@@ -32,6 +32,13 @@
     groups: adm
     append: true
 
+- name: Add promtail user to systemd-journal group (journal access)
+  ansible.builtin.user:
+    name: promtail
+    groups: systemd-journal
+    append: true
+  when: promtail_journal_units | length > 0
+
 - name: Deploy GeoIP update config
   ansible.builtin.template:
     src: GeoIP.conf.j2

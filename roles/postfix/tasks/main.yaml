@@ -16,6 +16,15 @@
     mode: "0644"
   notify: Reload postfix
 
+- name: Deploy virtual alias map
+  ansible.builtin.template:
+    src: virtual.j2
+    dest: /etc/postfix/virtual
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Rebuild virtual map
+
 - name: Enable and start Postfix
   ansible.builtin.systemd:
     name: postfix

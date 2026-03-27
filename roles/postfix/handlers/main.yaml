@@ -4,3 +4,8 @@
     name: postfix
     state: reloaded
   ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Rebuild virtual map
+  ansible.builtin.command:
+    cmd: postmap /etc/postfix/virtual
+  notify: Reload postfix
