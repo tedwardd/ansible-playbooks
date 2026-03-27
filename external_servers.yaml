@@ -102,6 +102,21 @@
         firewall-cmd --reload
       changed_when: false
 
+    # ── GeoIP ASN Database ─────────────────────────────────────────────────
+    - name: Create GeoIP directory
+      ansible.builtin.raw: mkdir -p /usr/share/GeoIP
+      changed_when: false
+
+    - name: Download GeoLite2-ASN database
+      ansible.builtin.raw: |
+        curl -sfL "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key={{ maxmind_license_key }}&suffix=tar.gz" \
+          -o /tmp/GeoLite2-ASN.tar.gz
+        tar -xzf /tmp/GeoLite2-ASN.tar.gz -C /tmp/
+        cp /tmp/GeoLite2-ASN_*/GeoLite2-ASN.mmdb /usr/share/GeoIP/GeoLite2-ASN.mmdb
+        rm -rf /tmp/GeoLite2-ASN*
+      changed_when: false
+      when: maxmind_license_key is defined and maxmind_license_key | length > 0
+
     # ── Promtail ─────────────────────────────────────────────────────────────
     - name: Create promtail system user
       ansible.builtin.raw: id promtail || useradd --no-create-home --shell /bin/false promtail
@@ -158,6 +173,19 @@
               - source_labels: ['__journal__systemd_unit']
                 regex: 'postfix.service|dovecot.service'
                 action: keep
+            pipeline_stages:
+              # Extract IPs from dovecot (rip=x.x.x.x) and postfix (unknown[x.x.x.x])
+              - regex:
+                  expression: 'rip=(?P<remote_ip>\d+\.\d+\.\d+\.\d+)'
+              - regex:
+                  expression: 'unknown\[(?P<remote_ip>\d+\.\d+\.\d+\.\d+)\]'
+              - geoip:
+                  db: /usr/share/GeoIP/GeoLite2-ASN.mmdb
+                  source: remote_ip
+                  db_type: asn
+              - labels:
+                  geoip_autonomous_system_number:
+                  geoip_autonomous_system_organization:
         EOF
       changed_when: false
 
