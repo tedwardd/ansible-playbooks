@@ -37,13 +37,19 @@
         maxretry: 5
     # nginx proxy locations — add new services here
     nginx_proxy_locations:
-      - path: /miniflux
+      - path: /
         backend: 192.168.1.58   # Traefik on jupiter
     nginx_remove_default_vhost: true
     nginx_vhosts:
-      - server_name: techmachine.net
+      - server_name: techmachine.net *.techmachine.net
         template: "{{ playbook_dir }}/templates/jumpstar-vhost.j2"
         filename: "techmachine.net.conf"
+        state: present
+      - server_name: miniflux.techmachine.net
+        template: "{{ playbook_dir }}/templates/jumpstar-subdomain-proxy.j2"
+        filename: "miniflux.techmachine.net.conf"
+        backend: 192.168.1.58
+        #upstream_path: /miniflux
         state: present
     # local certbot role
     certbot_domain: "techmachine.net"
