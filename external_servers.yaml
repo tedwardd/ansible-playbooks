@@ -94,11 +94,67 @@
         systemctl start blackbox_exporter || systemctl restart blackbox_exporter
       changed_when: false
 
+    # ── Node Exporter ────────────────────────────────────────────────────────
+    - name: Create node_exporter system user
+      ansible.builtin.raw: id node_exporter || useradd --no-create-home --shell /bin/false node_exporter
+      changed_when: false
+
+    - name: Download node_exporter
+      ansible.builtin.raw: |
+        if [ ! -f /usr/local/bin/node_exporter ]; then
+          curl -sfL https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz \
+            | tar -xzf - -C /tmp/
+          cp /tmp/node_exporter-1.8.2.linux-amd64/node_exporter /usr/local/bin/
+          chmod 755 /usr/local/bin/node_exporter
+        fi
+      changed_when: false
+
+    - name: Write node_exporter systemd unit
+      ansible.builtin.raw: |
+        cat > /etc/systemd/system/node_exporter.service << 'EOF'
+        [Unit]
+        Description=Node Exporter
+        After=network-online.target
+        Wants=network-online.target
+
+        [Service]
+        User=node_exporter
+        Group=node_exporter
+        Type=simple
+        ExecStart=/usr/local/bin/node_exporter
+        Restart=on-failure
+
+        [Install]
+        WantedBy=multi-user.target
+        EOF
+        systemctl daemon-reload
+      changed_when: false
+
+    - name: Enable and start node_exporter
+      ansible.builtin.raw: |
+        systemctl enable node_exporter
+        systemctl start node_exporter || systemctl restart node_exporter
+      changed_when: false
+
     # ── Firewall ──────────────────────────────────────────────────────────────
     - name: Allow blackbox_exporter from Tailscale network only
       ansible.builtin.raw: |
         firewall-cmd --permanent --query-rich-rule='rule family="ipv4" source address="100.64.0.0/10" port port="9115" protocol="tcp" accept' 2>/dev/null \
           || firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="100.64.0.0/10" port port="9115" protocol="tcp" accept'
+        firewall-cmd --reload
+      changed_when: false
+
+    - name: Allow node_exporter from Tailscale network only
+      ansible.builtin.raw: |
+        firewall-cmd --permanent --query-rich-rule='rule family="ipv4" source address="100.64.0.0/10" port port="9100" protocol="tcp" accept' 2>/dev/null \
+          || firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="100.64.0.0/10" port port="9100" protocol="tcp" accept'
+        firewall-cmd --reload
+      changed_when: false
+
+    - name: Allow ManageSieve from Tailscale network only
+      ansible.builtin.raw: |
+        firewall-cmd --permanent --query-rich-rule='rule family="ipv4" source address="100.64.0.0/10" port port="4190" protocol="tcp" accept' 2>/dev/null \
+          || firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="100.64.0.0/10" port port="4190" protocol="tcp" accept'
         firewall-cmd --reload
       changed_when: false
 
@@ -215,4 +271,417 @@
       ansible.builtin.raw: |
         systemctl enable promtail
         systemctl start promtail || systemctl restart promtail
+      changed_when: false
+
+    # ── Dovecot Sieve ─────────────────────────────────────────────────────────
+    - name: Install dovecot-pigeonhole
+      ansible.builtin.raw: yum install -y dovecot-pigeonhole
+      changed_when: false
+
+    - name: Write 90-sieve.conf
+      ansible.builtin.raw: |
+        cat > /etc/dovecot/conf.d/90-sieve.conf << 'EOF'
+        # Managed by Ansible — do not edit manually
+        plugin {
+          sieve = ~/.dovecot.sieve
+          sieve_dir = ~/sieve
+          sieve_max_script_size = 1M
+          sieve_quota_max_scripts = 0
+          sieve_quota_max_storage = 0
+        }
+
+        protocol lmtp {
+          mail_plugins = $mail_plugins sieve
+        }
+
+        protocol lda {
+          mail_plugins = $mail_plugins sieve
+        }
+        EOF
+      changed_when: false
+
+    - name: Write 20-managesieve.conf
+      ansible.builtin.raw: |
+        cat > /etc/dovecot/conf.d/20-managesieve.conf << 'EOF'
+        # Managed by Ansible — do not edit manually
+        protocols = $protocols sieve
+
+        protocol sieve {
+          managesieve_max_line_length = 65536
+          managesieve_implementation_string = Dovecot Pigeonhole
+          managesieve_max_compile_errors = 5
+        }
+        EOF
+      changed_when: false
+
+    - name: Write 10-master.conf with LMTP socket for Postfix
+      ansible.builtin.raw: |
+        cat > /etc/dovecot/conf.d/10-master.conf << 'EOF'
+        # Managed by Ansible — do not edit manually
+
+        service imap-login {
+          inet_listener imap {
+            #port = 143
+          }
+          inet_listener imaps {
+            #port = 993
+            #ssl = yes
+          }
+          service_count = 0
+          vsz_limit = 256M
+        }
+
+        service imap {
+          vsz_limit = 1024M
+          process_limit = 2048
+        }
+
+        service lmtp {
+          unix_listener /var/spool/postfix/private/dovecot-lmtp {
+            mode = 0600
+            user = postfix
+            group = postfix
+          }
+        }
+
+        service auth {
+          unix_listener /var/spool/postfix/private/auth {
+            mode = 0660
+            user = postfix
+            group = postfix
+          }
+        }
+
+        service auth-worker {
+        }
+
+        service managesieve-login {
+          inet_listener sieve {
+            port = 4190
+          }
+        }
+
+        service managesieve {
+          process_limit = 1024
+        }
+
+        service dict {
+          unix_listener dict {
+            #mode = 0600
+          }
+        }
+        EOF
+      changed_when: false
+
+    - name: Switch Postfix delivery from Procmail to Dovecot LDA
+      ansible.builtin.raw: |
+        python << 'PYEOF'
+        import re
+        with open('/etc/postfix/main.cf', 'r') as f:
+            content = f.read()
+        content = re.sub(r'^(mailbox_command|virtual_transport|home_mailbox).*\n', '', content, flags=re.MULTILINE)
+        if 'dovecot-lda' not in content:
+            content += 'mailbox_command = /usr/libexec/dovecot/dovecot-lda -f "$SENDER" -a "$RECIPIENT"\n'
+        with open('/etc/postfix/main.cf', 'w') as f:
+            f.write(content)
+        PYEOF
+      changed_when: false
+
+    - name: Restart Dovecot to load Sieve and ManageSieve
+      ansible.builtin.raw: systemctl restart dovecot
+      changed_when: false
+
+    - name: Reload Postfix to apply Dovecot LDA
+      ansible.builtin.raw: systemctl reload postfix
+      changed_when: false
+
+    # ── Sieve script ──────────────────────────────────────────────────────────
+    - name: Create sieve script directory
+      ansible.builtin.raw: mkdir -p /home/elw/sieve && chown elw:elw /home/elw/sieve
+      changed_when: false
+
+    - name: Deploy active sieve script
+      ansible.builtin.raw: |
+        cat > /home/elw/sieve/active.sieve << 'SIEVEEOF'
+        require ["fileinto", "mailbox"];
+
+        # ── FreeBSD ───────────────────────────────────────────────────────────────────
+        # More specific subfolders must come before the parent catch-all.
+
+        if header :contains "List-Id" "freebsd-current" {
+            fileinto :create "INBOX.Mailing Lists.FreeBSD.CURRENT";
+            stop;
+        }
+
+        if header :contains "List-Id" "freebsd-usb" {
+            fileinto :create "INBOX.Mailing Lists.FreeBSD.USB";
+            stop;
+        }
+
+        if anyof (
+            header :contains "List-Id" "freebsd-announce",
+            header :contains "Subject" "[FreeBSD-Announce]"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.FreeBSD.Announce";
+            stop;
+        }
+
+        if anyof (
+            header :contains "From" "security-advisories@freebsd.org",
+            header :contains "Subject" "[FreeBSD-Security]"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.FreeBSD.Security";
+            stop;
+        }
+
+        if anyof (
+            header :contains "From" "errata-notices@freebsd.org",
+            header :contains "Subject" "[FreeBSD-Errata]"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.FreeBSD.Errata";
+            stop;
+        }
+
+        # Catch-all for remaining FreeBSD list mail
+        if anyof (
+            header :contains "List-Id" "freebsd",
+            header :contains "From" "mailman-owner@freebsd.org",
+            header :contains "Subject" "[FreeBSD]"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.FreeBSD";
+            stop;
+        }
+
+        # ── Fedora ────────────────────────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "List-Id" "devel.lists.fedoraproject.org",
+            header :contains "Subject" "[Fedora-devel]"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.Fedora.Devel";
+            stop;
+        }
+
+        if anyof (
+            header :contains "List-Id" "server.lists.fedoraproject.org",
+            header :contains "Subject" "[Fedora-server]"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.Fedora.Server";
+            stop;
+        }
+
+        # ── OpenBSD ───────────────────────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "List-Id" "announce.openbsd.org",
+            header :contains "Subject" "[OpenBSD-Announce]"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.OpenBSD.Announce";
+            stop;
+        }
+
+        if anyof (
+            header :contains "List-Id" "misc.openbsd.org",
+            header :contains "Subject" "[OpenBSD-Misc]"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.OpenBSD.Misc";
+            stop;
+        }
+
+        # ── Slackware ─────────────────────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "From" "slackware-security@slackware.com",
+            header :contains "Sender" "owner-slackware-security@slackware.com",
+            header :contains "Subject" "[slackware-security]"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.Slackware.Security";
+            stop;
+        }
+
+        # Catch-all for remaining Slackware mail
+        if anyof (
+            header :contains "From" "@slackware.com",
+            header :contains "Sender" "owner-slackware",
+            header :contains "Subject" "[slackware-"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.Slackware";
+            stop;
+        }
+
+        # ── TOR ───────────────────────────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "List-Id" "tor-announce.lists.torproject.org",
+            header :contains "Subject" "[Tor-announce]"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.TOR.Announce";
+            stop;
+        }
+
+        # Catch-all for remaining TOR list mail
+        if anyof (
+            header :contains "List-Id" "lists.torproject.org",
+            header :contains "Subject" "[Tor-"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.TOR";
+            stop;
+        }
+
+        # ── Docker ────────────────────────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "List-Id" "docker-dev.googlegroups.com",
+            header :contains "From" "docker-dev@googlegroups.com",
+            header :contains "Subject" "[docker-dev]"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.Docker.Dev";
+            stop;
+        }
+
+        # ── CVEs / Security Advisories ────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "List-Id" "oss-security.lists.openwall.com",
+            header :contains "From" "oss-security@lists.openwall.com"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.CVEs";
+            stop;
+        }
+
+        # ── VIM ───────────────────────────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "Sender" "vim_use@googlegroups.com",
+            header :contains "From" "vim@vim.org"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.VIM";
+            stop;
+        }
+
+        # ── DC404 ─────────────────────────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "List-Id" "kaos.to",
+            header :contains "From" "@lists.kaos.to"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.DC404";
+            stop;
+        }
+
+        # ── ALE ───────────────────────────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "List-Id" "ale.org",
+            header :contains "From" "@ale.org",
+            header :contains "Subject" "[ale]"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.ALE";
+            stop;
+        }
+
+        # ── Archlinux ─────────────────────────────────────────────────────────────────
+
+        if header :contains "List-Id" "lists.archlinux.org" {
+            fileinto :create "INBOX.Mailing Lists.Archlinux";
+            stop;
+        }
+
+        # ── Cypherpunks ───────────────────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "List-Id" "cypherpunks.lists.cpunks.org",
+            header :contains "From" "@cpunks.org"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.Cpunks";
+            stop;
+        }
+
+        # ── Cryptography (Randombit) ──────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "List-Id" "cryptography.randombit.net",
+            header :contains "From" "cryptography@randombit.net"
+        ) {
+            fileinto :create "INBOX.Mailing Lists.Cryptography(Randombit)";
+            stop;
+        }
+
+        # ── Radio ─────────────────────────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "List-Id" "vhfcontesting.contesting.com",
+            header :contains "Subject" "[VHFcontesting]"
+        ) {
+            fileinto :create "INBOX.Radio.VHF Contesting";
+            stop;
+        }
+
+        if anyof (
+            header :contains "List-Id" "QRPLabs.groups.io",
+            header :contains "Subject" "[QRPLabs]"
+        ) {
+            fileinto :create "INBOX.Radio.QRPLabs";
+            stop;
+        }
+
+        if anyof (
+            header :contains "List-Id" "wsjtx.groups.io",
+            header :contains "Subject" "[WSJTX]"
+        ) {
+            fileinto :create "INBOX.Radio.WSJTX";
+            stop;
+        }
+
+        if anyof (
+            header :contains "List-Id" "ninotnc.groups.io",
+            header :contains "Subject" "[NinoTNC]"
+        ) {
+            fileinto :create "INBOX.Radio.NinoTNC";
+            stop;
+        }
+
+        if anyof (
+            header :contains "List-Id" "fourlanders.contesting.com",
+            header :contains "Subject" "[Fourlanders]"
+        ) {
+            fileinto :create "INBOX.Radio.FourLanders";
+            stop;
+        }
+
+        # ── CryptoGram ────────────────────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "From" "schneier@schneier.com",
+            header :contains "Subject" "CRYPTO-GRAM"
+        ) {
+            fileinto :create "INBOX.cryptogram";
+            stop;
+        }
+
+        # ── FSF ───────────────────────────────────────────────────────────────────────
+
+        if header :contains "From" "info@fsf.org" {
+            fileinto :create "INBOX.fsf";
+            stop;
+        }
+
+        # ── GitHub ────────────────────────────────────────────────────────────────────
+
+        if anyof (
+            header :contains "From" "noreply@github.com",
+            header :contains "Subject" "[GitHub]"
+        ) {
+            fileinto :create "INBOX.github";
+            stop;
+        }
+        SIEVEEOF
+        chown elw:elw /home/elw/sieve/active.sieve
+      changed_when: false
+
+    - name: Compile and activate sieve script
+      ansible.builtin.raw: |
+        sievec /home/elw/sieve/active.sieve
+        ln -sf /home/elw/sieve/active.sieve /home/elw/.dovecot.sieve
+        chown -h elw:elw /home/elw/.dovecot.sieve
       changed_when: false

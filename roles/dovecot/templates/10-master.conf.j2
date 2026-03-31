@@ -1,11 +1,47 @@
 # Managed by Ansible — do not edit manually
-# TODO: Populate full content from live server audit (sudo cat /etc/dovecot/conf.d/10-master.conf)
-# The following Postfix SASL auth socket block MUST be present:
+
+service imap-login {
+  inet_listener imap {
+    #port = 143
+  }
+  inet_listener imaps {
+    #port = 993
+    #ssl = yes
+  }
+  service_count = 0
+  vsz_limit = 256M
+}
+
+service imap {
+  vsz_limit = 1024M
+  process_limit = 2048
+}
 
 service auth {
   unix_listener /var/spool/postfix/private/auth {
     mode = 0660
     user = postfix
     group = postfix
+  }
+}
+
+service auth-worker {
+  # Runs as root by default to access /etc/shadow.
+  # Change to $default_internal_user if shadow access is not needed.
+}
+
+service managesieve-login {
+  inet_listener sieve {
+    port = 4190
+  }
+}
+
+service managesieve {
+  process_limit = 1024
+}
+
+service dict {
+  unix_listener dict {
+    #mode = 0600
   }
 }

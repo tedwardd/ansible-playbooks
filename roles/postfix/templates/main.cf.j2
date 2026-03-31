@@ -6,16 +6,21 @@ myorigin = $mydomain
 inet_interfaces = all
 inet_protocols = ipv4
 mydestination = $myhostname, localhost.$mydomain, localhost
+masquerade_domains = {{ postfix_virtual_alias_domains | join(', ') }}
 
-# Virtual aliases
+# Virtual aliases — all inbound addresses resolve to local system users
 virtual_alias_domains = {{ postfix_virtual_alias_domains | join(', ') }}
 virtual_alias_maps = hash:/etc/postfix/virtual
+
+# Delivery via Dovecot LDA (enables Sieve filtering)
+mailbox_command = /usr/lib/dovecot/dovecot-lda -f "$SENDER" -a "$RECIPIENT"
 
 # TLS
 smtpd_tls_cert_file = /etc/letsencrypt/live/{{ mail_hostname }}/fullchain.pem
 smtpd_tls_key_file = /etc/letsencrypt/live/{{ mail_hostname }}/privkey.pem
 smtpd_use_tls = yes
 smtpd_tls_security_level = may
+smtpd_tls_auth_only = yes
 smtp_tls_security_level = may
 smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
 smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
@@ -24,7 +29,12 @@ smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
 smtpd_sasl_type = dovecot
 smtpd_sasl_path = private/auth
 smtpd_sasl_auth_enable = yes
-smtpd_recipient_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination
+broken_sasl_auth_clients = yes
+smtpd_recipient_restrictions =
+  permit_mynetworks,
+  permit_sasl_authenticated,
+  reject_unauth_destination,
+  check_policy_service unix:postgrey/socket
 
 # DKIM milter
 milter_default_action = accept

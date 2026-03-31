@@ -4,3 +4,15 @@
     name: dovecot
     state: reloaded
   ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Restart dovecot
+  ansible.builtin.systemd:
+    name: dovecot
+    state: restarted
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Compile sieve script
+  ansible.builtin.command:
+    cmd: sievec /home/{{ item.userid }}/sieve/active.sieve
+  loop: "{{ local_users }}"
+  ignore_errors: "{{ ansible_check_mode }}"
