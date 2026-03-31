@@ -10,7 +10,7 @@ server {
     include /etc/nginx/snippets/certs.conf;
 
     location / {
-        proxy_pass http://{{ item.backend }}/{{ item.upstream_path }}/;
+        proxy_pass http://{{ item.backend }}{{ ('/' + item.upstream_path + '/') if item.upstream_path is defined else '/' }};
         proxy_set_header Host $host;
         proxy_redirect off;
         proxy_set_header X-Real-IP $remote_addr;
